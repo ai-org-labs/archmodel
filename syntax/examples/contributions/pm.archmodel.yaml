@@ -1,0 +1,26 @@
+version: '0.1'
+products:
+  - id: product-1
+    name: 会員サービス
+    owner: PM
+    status: draft
+    purpose: 顧客が安心して利用する
+    primary_users:
+      - 会員
+    user_value: 自分の情報を安全に扱う
+    scope:
+      - 認証
+    has:
+      - capability-1
+capabilities:
+  - id: capability-1
+    name: 認証できる
+    owner: PM
+    status: draft
+    purpose: 本人性を確認
+    actor:
+      - 会員
+    inputs:
+      - 認証情報
+    outputs:
+      - トークン

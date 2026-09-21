@@ -1,0 +1,5 @@
+version: '0.1'
+product:
+  id: web-service
+  name: web-service
+  purpose: 顧客がオンラインでサービスを利用できる

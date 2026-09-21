@@ -1,0 +1,4 @@
+concept: quality
+good_example: 認証可用性99.99%、月間成功率で測定
+bad_example: 高品質
+question: 保証水準をどう測り、どう検証しますか？

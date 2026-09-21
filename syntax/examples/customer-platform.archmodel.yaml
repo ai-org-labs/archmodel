@@ -1,0 +1,174 @@
+version: '0.1'
+product:
+  id: customer-platform
+  name: 顧客プラットフォーム
+  purpose: 顧客が安全にサービスを利用できる
+  primary_users:
+    - 顧客
+    - サポート担当
+  user_value: 安心して自分の情報にアクセスできる
+  scope:
+    - 認証
+    - 顧客情報
+  owner: platform-team
+  capabilities:
+    - id: authentication
+      name: 安全にログインできる
+      purpose: 顧客の本人性を確認する
+      actor:
+        - 顧客
+      inputs:
+        - 認証情報
+      outputs:
+        - アクセストークン
+      quality:
+        availability:
+          id: auth-availability
+          name: 認証可用性
+          requirement: 月間の認証成功率を保証する
+          target: 99.99
+          unit: '%'
+          risk: high
+          realized_by:
+            - auth-service
+            - audit-service
+          verified_by:
+            - failover-test
+      behaviors:
+        - id: login
+          name: ログインする
+          trigger: 顧客が認証情報を送信する
+          outcomes:
+            - アクセストークン発行
+            - UserAuthenticatedイベント発行
+          failure_behaviors:
+            - 不正な認証情報を拒否
+          realized_by:
+            - auth-service
+            - audit-service
+          scenarios:
+            - id: login-success
+              name: 正しい認証情報でログインできる
+              verified_by:
+                - login-contract
+              type: gherkin
+              specification: |
+                Given 有効なユーザーが存在する
+                When 正しい認証情報でログインする
+                Then アクセストークンが返る
+                And UserAuthenticatedが発行される
+        - id: logout
+          name: ログアウトする
+          trigger: 顧客がログアウトを要求する
+          outcomes:
+            - セッション無効化
+          realized_by:
+            - auth-service
+          scenarios:
+            - id: logout-success
+              name: セッションが失効する
+              verified_by:
+                - logout-unit
+              type: gherkin
+              specification: |
+                Given ログイン済みの顧客がいる
+                When ログアウトする
+                Then セッションが無効になる
+components:
+  - id: auth-service
+    name: 認証サービス
+    kind: application
+    responsibilities:
+      - 認証情報検証
+      - トークン発行
+      - セッション失効
+    template: hexagonal
+    implemented_by:
+      - auth-runtime
+      - auth-source
+      - auth-iac
+  - id: audit-service
+    name: 監査サービス
+    kind: platform
+    responsibilities:
+      - 認証履歴記録
+      - 認証失敗監視
+    implemented_by:
+      - audit-storage
+realizations:
+  - id: auth-runtime
+    name: 認証API / Cloud Run
+    kind: runtime
+    provider: gcp
+    service: Cloud Run
+    environment: production
+    public: true
+    authentication: OIDC / Identity Platform
+    observability:
+      - 認証成功率メトリクス
+      - エラー率アラート
+  - id: auth-source
+    name: 認証ソースコード
+    kind: source
+    location: src/components/auth/
+  - id: auth-iac
+    name: 認証インフラ定義
+    kind: iac
+    location: infra/auth/main.tf
+  - id: audit-storage
+    name: 監査ログ / BigQuery
+    kind: data
+    provider: gcp
+    service: BigQuery
+verifications:
+  - id: login-contract
+    name: 認証API契約テスト
+    level: contract
+    method: 成功応答とイベント形式を確認
+    location: test/auth-contract.test.ts
+    result: unknown
+  - id: logout-unit
+    name: セッション失効テスト
+    level: unit
+    method: ログアウト後のトークン無効化を確認
+    result: unknown
+  - id: failover-test
+    name: 障害復旧テスト
+    level: resilience
+    method: 障害注入時の成功率と復旧時間を測定
+    result: unknown
+  - id: audit-test
+    name: 監査ログ検証
+    level: telemetry
+    method: 認証イベントの監査ログ保存を確認
+    result: unknown
+policies:
+  - id: auth-baseline
+    name: 認証監査ポリシー
+    applies_to:
+      - authentication
+      - auth-service
+      - auth-runtime
+    realized_by:
+      - audit-service
+    verified_by:
+      - audit-test
+    rules:
+      - 認証の成功と失敗を監査ログに残す
+decisions:
+  - id: serverless-auth
+    name: サーバーレス認証API
+    title: Cloud Runを採用する
+    category: runtime
+    context: 運用負荷を抑えたい
+    decision: 認証APIをCloud Runで実行する
+    alternatives:
+      - GKE
+      - Compute Engine
+    reason: 小規模チームで運用できる
+    trade_off:
+      - 起動レイテンシーの監視が必要
+    decision_status: accepted
+    affects:
+      - authentication
+      - auth-runtime

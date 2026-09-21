@@ -1,0 +1,67 @@
+version: '0.1'
+products:
+  - id: product-1
+    name: 会員サービス
+    owner: PM
+    status: draft
+    purpose: 顧客が安心して利用する
+    primary_users:
+      - 会員
+    user_value: 自分の情報を安全に扱う
+    scope:
+      - 認証
+    has:
+      - capability-1
+capabilities:
+  - id: capability-1
+    name: 認証できる
+    owner: PM
+    status: draft
+    purpose: 本人性を確認
+    actor:
+      - 会員
+    inputs:
+      - 認証情報
+    outputs:
+      - トークン
+    has:
+      - behavior-1
+components:
+  - id: component-1
+    name: Auth Service
+    owner: Architecture
+    status: draft
+    kind: application
+    responsibilities:
+      - 認証情報を確認する
+    implemented_by:
+      - realization-1
+realizations:
+  - id: realization-1
+    name: Auth Cloud Run
+    owner: Architecture
+    status: draft
+    kind: runtime
+relations: []
+behaviors:
+  - id: behavior-1
+    name: ログイン
+    owner: SE / QA
+    status: draft
+    trigger: 認証情報を送信する
+    outcomes:
+      - トークンを発行する
+    has:
+      - scenario-1
+    realized_by:
+      - component-1
+scenarios:
+  - id: scenario-1
+    name: 正常ログイン
+    owner: SE
+    status: draft
+    type: gherkin
+    specification: |-
+      Given 有効な会員
+      When ログインする
+      Then トークンが返る

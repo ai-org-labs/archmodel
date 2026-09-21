@@ -1,0 +1,445 @@
+version: '0.1'
+product:
+  id: customer-platform
+  name: Customer Platform
+  purpose: 顧客が安全にサービスを利用できる
+  primary_users:
+    - 顧客
+    - サポート担当
+  user_value: 安心して自分の情報にアクセスできる
+  scope:
+    - 認証
+    - 顧客情報
+  owner: platform-team
+  capabilities:
+    - id: authentication
+      name: Authentication
+      purpose: 顧客の本人性を確認する
+      actor:
+        - 顧客
+      inputs:
+        - 認証情報
+      outputs:
+        - アクセストークン
+      quality:
+        availability:
+          id: auth-availability
+          name: 認証可用性
+          requirement: 月間の認証成功率を保証する
+          target: 99.99
+          unit: '%'
+          risk: high
+          realized_by:
+            - auth-service
+            - audit-service
+          verified_by:
+            - failover-test
+        security:
+          id: auth-security
+          name: 認証情報の保護
+          requirement: 認証情報を暗号化して扱う
+          level: high
+          realized_by:
+            - auth-service
+          verified_by:
+            - login-contract
+        observability:
+          id: auth-observability
+          name: 認証イベントの監視
+          requirement: 失敗率と遅延を監視する
+          realized_by:
+            - audit-service
+          verified_by:
+            - audit-test
+      behaviors:
+        - id: login
+          name: ログインする
+          trigger: 顧客が認証情報を送信する
+          outcomes:
+            - アクセストークン発行
+            - UserAuthenticatedイベント発行
+          failure_behaviors:
+            - 不正な認証情報を拒否
+          realized_by:
+            - auth-service
+            - audit-service
+          scenarios:
+            - id: login-success
+              name: 正しい認証情報でログインできる
+              verified_by:
+                - login-contract
+              type: gherkin
+              specification: |
+                Given 有効なユーザーが存在する
+                When 正しい認証情報でログインする
+                Then アクセストークンが返る
+                And UserAuthenticatedが発行される
+            - id: login-rejected
+              name: 不正な認証情報を拒否
+              verified_by:
+                - login-contract
+              type: gherkin
+              specification: |-
+                Given 登録済みの顧客
+                When 誤ったパスワードを送信
+                Then トークンを発行しない
+          commands:
+            - Login
+          events:
+            - UserAuthenticated
+          use_cases:
+            - 顧客ログイン
+          uses:
+            - login-api
+            - user-authenticated
+        - id: logout
+          name: ログアウトする
+          trigger: 顧客がログアウトを要求する
+          outcomes:
+            - セッション無効化
+          realized_by:
+            - auth-service
+          scenarios:
+            - id: logout-success
+              name: セッションが失効する
+              verified_by:
+                - logout-unit
+              type: gherkin
+              specification: |
+                Given ログイン済みの顧客がいる
+                When ログアウトする
+                Then セッションが無効になる
+            - id: logout-repeat
+              name: 再度のログアウトは安全
+              verified_by:
+                - logout-unit
+              type: gherkin
+              specification: |-
+                Given 失効済みのセッション
+                When 再度ログアウト
+                Then 状態を変更せず成功を返す
+          commands:
+            - Logout
+          events:
+            - SessionRevoked
+          use_cases:
+            - セッション終了
+      guarantees:
+        - 本人のみアクセス可能
+      constraints:
+        - 個人情報をログに残さない
+    - id: profile-management
+      name: Profile Management
+      purpose: 顧客が自身の情報を管理できる
+      actor:
+        - 顧客
+      inputs:
+        - プロフィール
+      outputs:
+        - 最新の顧客情報
+      guarantees:
+        - 本人だけが変更できる
+      constraints:
+        - 変更履歴を保持
+      quality:
+        performance:
+          id: profile-performance
+          name: プロフィール応答時間
+          requirement: 参照APIのp95レイテンシー
+          target: 200
+          unit: ms
+          realized_by:
+            - profile-service
+          verified_by:
+            - profile-test
+        audit:
+          id: profile-audit
+          name: 変更証跡
+          requirement: 変更前後の値と主体を保持
+          realized_by:
+            - audit-service
+          verified_by:
+            - audit-test
+      behaviors:
+        - id: view-profile
+          name: プロフィールを参照する
+          trigger: 顧客がマイページを開く
+          outcomes:
+            - 最新の情報を表示
+          commands:
+            - GetProfile
+          events:
+            - ProfileViewed
+          realized_by:
+            - profile-service
+            - auth-service
+          scenarios:
+            - id: profile-found
+              name: 登録情報を表示できる
+              verified_by:
+                - profile-test
+              type: gherkin
+              specification: |-
+                Given 認証済みの顧客
+                When プロフィールを参照
+                Then 登録情報を返す
+            - id: profile-forbidden
+              name: 他人の情報は参照できない
+              verified_by:
+                - profile-test
+              type: gherkin
+              specification: |-
+                Given 別の顧客のID
+                When プロフィールを参照
+                Then アクセスを拒否
+          use_cases:
+            - 本人情報の参照
+        - id: update-profile
+          name: プロフィールを更新する
+          trigger: 顧客が変更内容を保存
+          outcomes:
+            - 情報更新と監査記録
+          commands:
+            - UpdateProfile
+          events:
+            - ProfileUpdated
+          realized_by:
+            - profile-service
+            - audit-service
+          scenarios:
+            - id: profile-updated
+              name: 変更内容を保存できる
+              verified_by:
+                - profile-test
+              type: gherkin
+              specification: |-
+                Given 有効な変更内容
+                When 保存を実行
+                Then 更新結果と履歴を記録
+            - id: profile-invalid
+              name: 不正な入力を拒否
+              verified_by:
+                - profile-test
+              type: gherkin
+              specification: |-
+                Given 不正なメールアドレス
+                When 保存を実行
+                Then 元の情報を維持
+          use_cases:
+            - 本人情報の編集
+  out_of_scope:
+    - 決済・請求
+components:
+  - id: auth-service
+    name: Auth Service
+    kind: application
+    responsibilities:
+      - 認証情報検証
+      - トークン発行
+      - セッション失効
+    template: hexagonal
+    implemented_by:
+      - auth-runtime
+      - auth-source
+      - auth-iac
+      - identity-platform
+    provides:
+      - login-api
+      - user-authenticated
+    consumes:
+      - identity-api
+  - id: audit-service
+    name: Audit Service
+    kind: platform
+    responsibilities:
+      - 認証履歴記録
+      - 認証失敗監視
+    implemented_by:
+      - audit-storage
+      - audit-topic
+    consumes:
+      - user-authenticated
+  - id: profile-service
+    name: Profile Service
+    kind: domain
+    responsibilities:
+      - プロフィール参照・更新
+      - 入力の検証
+    interfaces:
+      - REST
+    implemented_by:
+      - profile-runtime
+realizations:
+  - id: auth-runtime
+    name: 認証API / Cloud Run
+    kind: runtime
+    provider: gcp
+    service: Cloud Run
+    environment: production
+    public: true
+    authentication: OIDC / Identity Platform
+    observability:
+      - 認証成功率メトリクス
+      - エラー率アラート
+  - id: auth-source
+    name: 認証ソースコード
+    kind: source
+    location: src/components/auth/
+  - id: auth-iac
+    name: 認証インフラ定義
+    kind: iac
+    location: infra/auth/main.tf
+  - id: audit-storage
+    name: 監査ログ / BigQuery
+    kind: data
+    provider: gcp
+    service: BigQuery
+  - id: profile-runtime
+    name: Profile API
+    kind: runtime
+    provider: gcp
+    service: Cloud Run
+    authentication: OIDC
+    public: true
+  - id: identity-platform
+    name: Identity Platform
+    kind: resource
+    provider: gcp
+    service: Identity Platform
+  - id: audit-topic
+    name: Auth Events
+    kind: resource
+    provider: gcp
+    service: Pub/Sub
+verifications:
+  - id: login-contract
+    name: 認証API契約テスト
+    level: contract
+    method: 成功応答とイベント形式を確認
+    location: test/auth-contract.test.ts
+    result: unknown
+  - id: logout-unit
+    name: セッション失効テスト
+    level: unit
+    method: ログアウト後のトークン無効化を確認
+    result: unknown
+  - id: failover-test
+    name: 障害復旧テスト
+    level: resilience
+    method: 障害注入時の成功率と復旧時間を測定
+    result: unknown
+  - id: audit-test
+    name: 監査ログ検証
+    level: telemetry
+    method: 認証イベントの監査ログ保存を確認
+    result: unknown
+  - id: profile-test
+    name: Profile contract
+    level: contract
+    method: 参照・更新・拒否の契約を確認
+    result: unknown
+  - id: iam-test
+    name: IAM policy check
+    level: iac
+    method: サービスアカウントの権限を検査
+    result: unknown
+policies:
+  - id: auth-baseline
+    name: Logging Standard
+    applies_to:
+      - authentication
+      - auth-service
+      - auth-runtime
+      - profile-management
+    realized_by:
+      - audit-service
+    verified_by:
+      - audit-test
+    rules:
+      - 認証の成功と失敗を監査ログに残す
+  - id: least-privilege
+    name: IAM / Least Privilege
+    applies_to:
+      - auth-runtime
+      - profile-runtime
+    realized_by:
+      - auth-service
+      - profile-service
+    verified_by:
+      - iam-test
+    rules:
+      - 各サービスに最小限の権限を付与
+decisions:
+  - id: serverless-auth
+    name: サーバーレス認証API
+    title: Cloud Runを採用する
+    category: runtime
+    context: 運用負荷を抑えたい
+    decision: 認証APIをCloud Runで実行する
+    alternatives:
+      - GKE
+      - Compute Engine
+    reason: 小規模チームで運用できる
+    trade_off:
+      - 起動レイテンシーの監視が必要
+    decision_status: accepted
+    affects:
+      - authentication
+      - auth-runtime
+      - customer-platform
+  - id: shared-audit
+    name: 監査責務を共通化する
+    category: ownership
+    context: 認証とプロフィールで同じ証跡要件
+    decision: Audit Serviceを共有
+    reason: 保持ルールと検索方法を統一
+    trade_off:
+      - 共有基盤への依存
+    decision_status: accepted
+    affects:
+      - audit-service
+      - authentication
+      - profile-management
+contracts:
+  - id: login-api
+    name: POST /login
+    kind: http
+    specification: openapi/login.yaml
+    verified_by:
+      - login-contract
+  - id: user-authenticated
+    name: UserAuthenticated
+    kind: event
+    specification: asyncapi/auth.yaml
+    verified_by:
+      - audit-test
+  - id: identity-api
+    name: Identity API
+    kind: external
+    specification: contracts/identity.md
+    verified_by:
+      - login-contract
+relations:
+  - id: auth-to-idp
+    from: auth-service
+    to: identity-platform
+    type: calls
+    protocol: https
+    contract: identity-api
+  - id: auth-to-audit
+    from: auth-service
+    to: audit-topic
+    type: publishes
+    protocol: pubsub
+    contract: user-authenticated
+  - id: audit-subscription
+    from: audit-service
+    to: audit-topic
+    type: subscribes
+    protocol: pubsub
+    contract: user-authenticated
+  - id: audit-write
+    from: audit-service
+    to: audit-storage
+    type: writes
+    protocol: BigQuery API

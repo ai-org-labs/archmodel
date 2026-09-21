@@ -1,0 +1,21 @@
+version: '0.1'
+behaviors:
+  - id: behavior-1
+    name: ログイン
+    owner: SE
+    status: draft
+    trigger: 認証情報を送信する
+    outcomes:
+      - トークンを発行する
+    has:
+      - scenario-1
+scenarios:
+  - id: scenario-1
+    name: 正常ログイン
+    owner: SE
+    status: draft
+    type: gherkin
+    specification: |-
+      Given 有効な会員
+      When ログインする
+      Then トークンが返る

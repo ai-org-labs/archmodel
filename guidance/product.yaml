@@ -1,0 +1,4 @@
+concept: product
+good_example: 顧客が自分の情報を安全に管理できる
+bad_example: GCPプロジェクトA
+question: 誰にどの価値を提供し、何を責任範囲としますか？

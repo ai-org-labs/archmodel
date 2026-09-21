@@ -1,0 +1,4 @@
+concept: behavior
+good_example: ログイン要求時にトークンを発行する
+bad_example: validateメソッドを呼ぶ
+question: 何が起きたとき、どんな結果になりますか？

@@ -1,0 +1,3 @@
+implementation: src/model/views.ts
+outputs: [svg, quality-matrix, markdown, json, yaml, backlog-candidates, directory-proposal]
+source_of_truth: Design Model

@@ -1,0 +1,4994 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://archmodel.dev/schema/archmodel.schema.json",
+  "title": "ArchModel v0.1 draft model",
+  "type": "object",
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": "0.1"
+    },
+    "product": {
+      "$ref": "#/$defs/product"
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/product"
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    },
+    "behaviors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/behavior"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    },
+    "qualities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/quality"
+      }
+    },
+    "policies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/policy"
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision"
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "realizations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/realization"
+      }
+    },
+    "verifications": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/verification"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "contracts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contract"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/architectureRelation"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "product": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primary_users": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "user_value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "out_of_scope": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/capability"
+              }
+            ]
+          }
+        },
+        "policies": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/policy"
+              }
+            ]
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/decision"
+              }
+            ]
+          }
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/component"
+              }
+            ]
+          }
+        },
+        "realizations": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/realization"
+              }
+            ]
+          }
+        },
+        "verifications": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/verification"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "purpose",
+        "primary_users",
+        "user_value",
+        "scope"
+      ]
+    },
+    "capability": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "guarantees": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "behaviors": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/behavior"
+              }
+            ]
+          }
+        },
+        "qualities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "quality": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "reliability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "reliability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "availability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "availability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "resilience": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "resilience"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "recoverability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "recoverability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "performance": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "performance"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "scalability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "scalability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "security": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "security"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "privacy": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "privacy"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "operability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "operability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "observability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "observability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "audit": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "audit"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "maintainability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "maintainability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "testability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "testability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "usability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "usability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "accessibility": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "accessibility"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "compatibility": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "compatibility"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "interoperability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "interoperability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "portability": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "portability"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "migration": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "migration"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "deployment": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "deployment"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            },
+            "safety": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "draft",
+                    "designed",
+                    "implemented",
+                    "verified",
+                    "operational"
+                  ]
+                },
+                "extensions": {
+                  "type": "object"
+                },
+                "attribute": {
+                  "enum": [
+                    "safety"
+                  ]
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "number"
+                  ]
+                },
+                "unit": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "level": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "requirement": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sli": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rto": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rpo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "risk": {
+                  "enum": [
+                    "normal",
+                    "high",
+                    "critical"
+                  ]
+                },
+                "has": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "realized_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "implemented_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verified_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "verifies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "applies_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "affects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "evidenced_by": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "additionalProperties": false,
+              "x-design-required": [
+                "name",
+                "attribute",
+                "requirement"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "purpose",
+        "actor",
+        "inputs",
+        "outputs",
+        "behaviors"
+      ]
+    },
+    "behavior": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "actor": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "trigger": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "failure_behaviors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "side_effects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "$ref": "#/$defs/scenario"
+              }
+            ]
+          }
+        },
+        "use_cases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "uses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "trigger",
+        "outcomes"
+      ]
+    },
+    "scenario": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "type": {
+          "enum": [
+            "gherkin",
+            "state_transition",
+            "timing",
+            "example",
+            "batch",
+            "iot",
+            "async_event",
+            "text"
+          ]
+        },
+        "specification": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "type",
+        "specification"
+      ]
+    },
+    "quality": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "attribute": {
+          "enum": [
+            "reliability",
+            "availability",
+            "resilience",
+            "recoverability",
+            "performance",
+            "scalability",
+            "security",
+            "privacy",
+            "operability",
+            "observability",
+            "audit",
+            "maintainability",
+            "testability",
+            "usability",
+            "accessibility",
+            "compatibility",
+            "interoperability",
+            "portability",
+            "migration",
+            "deployment",
+            "safety"
+          ]
+        },
+        "target": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "level": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sli": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rto": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rpo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "risk": {
+          "enum": [
+            "normal",
+            "high",
+            "critical"
+          ]
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "attribute",
+        "requirement"
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "rules"
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alternatives": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trade_off": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "decision_status": {
+          "enum": [
+            "proposed",
+            "accepted",
+            "deprecated",
+            "superseded"
+          ]
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "context",
+        "decision",
+        "reason"
+      ]
+    },
+    "component": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "application",
+            "domain",
+            "data",
+            "interface",
+            "platform"
+          ]
+        },
+        "responsibilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "template": {
+          "enum": [
+            "hexagonal",
+            "ddd",
+            "vertical-slice"
+          ]
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "provides": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "consumes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "kind",
+        "responsibilities"
+      ]
+    },
+    "realization": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "runtime",
+            "resource",
+            "network",
+            "data",
+            "directory",
+            "module",
+            "source",
+            "iac",
+            "deployment"
+          ]
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "service": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "public": {
+          "type": "boolean"
+        },
+        "authentication": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deployment_strategy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observability": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "kind"
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "level": {
+          "enum": [
+            "unit",
+            "domain",
+            "contract",
+            "integration",
+            "acceptance",
+            "e2e",
+            "iac",
+            "policy",
+            "resilience",
+            "telemetry"
+          ]
+        },
+        "method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "enum": [
+            "unknown",
+            "passed",
+            "failed"
+          ]
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "level",
+        "method"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "collected_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result": {
+          "enum": [
+            "passed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "has": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realizes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "realized_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "implemented_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "verifies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "affects": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidenced_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "location"
+      ]
+    },
+    "contract": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "designed",
+            "implemented",
+            "verified",
+            "operational"
+          ]
+        },
+        "extensions": {
+          "type": "object"
+        },
+        "kind": {
+          "enum": [
+            "http",
+            "event",
+            "message",
+            "external"
+          ]
+        },
+        "specification": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verified_by": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "x-design-required": [
+        "name",
+        "kind",
+        "specification"
+      ]
+    },
+    "architectureRelation": {
+      "type": "object",
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "depends_on",
+            "calls",
+            "publishes",
+            "subscribes",
+            "reads",
+            "writes",
+            "routes_to"
+          ]
+        },
+        "protocol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extensions": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

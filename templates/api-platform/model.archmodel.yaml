@@ -1,0 +1,5 @@
+version: '0.1'
+product:
+  id: api-platform
+  name: api-platform
+  purpose: 外部システムが安定してAPIを利用できる

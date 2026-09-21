@@ -1,0 +1,4 @@
+concept: capability
+good_example: 顧客を認証できる
+bad_example: Cloud Runを使う
+question: 誰から何を受け取り、何を返しますか？

@@ -1,0 +1,8 @@
+version: '0.1'
+realizations:
+  - id: existing-api
+    name: 既存のCloud Run API
+    kind: runtime
+    provider: gcp
+    service: Cloud Run
+    public: true

@@ -1,0 +1,17 @@
+version: '0.1'
+realizations:
+  - id: realization-1
+    name: Auth Cloud Run
+    owner: Architecture
+    status: draft
+    kind: runtime
+components:
+  - id: component-1
+    name: Auth Service
+    owner: Architecture
+    status: draft
+    kind: application
+    responsibilities:
+      - 認証情報を確認する
+    implemented_by:
+      - realization-1

@@ -1,0 +1,5 @@
+version: '0.1'
+product:
+  id: cloud-platform
+  name: cloud-platform
+  purpose: 基盤利用チームが安全にデプロイできる
