@@ -1,13 +1,13 @@
-import {laneCopy,laneLabel,type LaneLanguage} from '../src/model/lane-labels.js';
-import {fieldLabels,relationLabels} from '../src/model/presentation.js';
+import {laneCopy,laneLabel,type LaneLanguage} from '@archmodel/core';
+import {fieldLabels,relationLabels} from '@archmodel/core';
 import {DocumentHistory} from './history.js';
 import {installAuthoring} from './authoring.js';
 import './site.css';
 import sample from '../syntax/examples/design-map.archmodel.yaml?raw';
 import bottomUp from '../syntax/examples/bottom-up.archmodel.yaml?raw';
 import reference from '../syntax/reference.md?raw';
-import {deleteEntity,parseModel,validateModel,nextQuestion,renderDesignMap,toMarkdown,availableLinks,linkEntities,connectionTypes,EMPTY_MODEL} from '../src/index.js';
-import type {Model,TraversalOptions,Relation,Kind} from '../src/index.js';
+import {deleteEntity,parseModel,validateModel,nextQuestion,renderDesignMap,toMarkdown,availableLinks,linkEntities,connectionTypes,EMPTY_MODEL} from '@archmodel/core';
+import type {Model,TraversalOptions,Relation,Kind} from '@archmodel/core';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 document.body.innerHTML=`<header><div class="brand"><span class="brand-mark">A</span><strong>ArchModel</strong><span class="divider"></span><span class="workspace-name">Design map</span></div><nav><button id="new-model">新規作成</button><button id="add-element">＋ 要素</button><button id="load">開く</button><input type="file" id="file" accept=".yaml,.yml,.json" hidden><button id="save">YAML保存</button><button id="svg">SVG保存</button><button id="edit" class="primary" aria-expanded="false">〈 〉 DSLを編集</button></nav></header>

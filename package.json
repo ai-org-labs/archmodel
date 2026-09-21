@@ -1,24 +1,19 @@
 {
   "name": "@archmodel/core",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "npm run build:library && vite --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "npm run typecheck && vite build -c vite.config.site.ts && node tools/build-standalone.mjs",
+    "build": "npm run build:library && npm run typecheck && vite build -c vite.config.site.ts && node tools/build-standalone.mjs",
     "preview": "vite preview -c vite.config.site.ts --host 127.0.0.1",
     "build:library": "vite build -c vite.config.library.ts && tsc -p tsconfig.library.json",
-    "verify": "node tools/generate-field-reference.mjs --check && npm run typecheck && npm test && npm run build && npm run build:library && node tools/verify-site.mjs",
+    "verify": "node tools/generate-field-reference.mjs --check && npm run build && npm test && node tools/verify-site.mjs",
     "cli": "node tools/cli.mjs",
-    "reference": "node tools/generate-field-reference.mjs"
-  },
-  "dependencies": {
-    "@archmap/icons": "file:vendor/archmap-icons-0.1.3.tgz",
-    "js-yaml": "^4.3.2",
-    "mermaid": "12.0.0"
+    "reference": "node tools/generate-field-reference.mjs",
+    "prepack": "npm run build:library"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
@@ -26,7 +21,10 @@
     "jsdom": "^26.1.0",
     "typescript": "^5.6.3",
     "vite": "^8.3.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "@archmap/icons": "file:vendor/archmap-icons-0.1.3.tgz",
+    "js-yaml": "^4.3.2",
+    "mermaid": "12.0.0"
   },
   "overrides": {
     "lodash-es": "4.18.1"
@@ -36,7 +34,32 @@
     ".": {
       "types": "./dist/types/src/index.d.ts",
       "import": "./dist/archmodel.js"
-    }
+    },
+    "./schema": "./schema/archmodel.schema.json"
   },
-  "types": "./dist/types/src/index.d.ts"
+  "types": "./dist/types/src/index.d.ts",
+  "files": [
+    "dist",
+    "schema",
+    "syntax/reference.md",
+    "syntax/examples",
+    "tools/cli.mjs",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "main": "./dist/archmodel.js",
+  "bin": {
+    "archmodel": "./tools/cli.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ai-org-labs/archmodel.git"
+  },
+  "homepage": "https://ai-org-labs.github.io/archmodel/",
+  "bugs": {
+    "url": "https://github.com/ai-org-labs/archmodel/issues"
+  }
 }

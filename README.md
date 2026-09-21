@@ -63,6 +63,20 @@ npm run dev
 - [要件対応と実装範囲](docs/ACCEPTANCE.md)
 - [AI向け設計ガイド](prompts/system.md)
 
+## npmパッケージ
+
+```sh
+npm install @archmodel/core
+```
+
+```js
+import { parseModel, renderDesignMap } from "@archmodel/core";
+const model = parseModel("version: '0.1'\nproducts: [{ id: p, name: Example }]");
+const { svg } = renderDesignMap(model);
+```
+
+ESMとTypeScript型定義、JSON Schema、`archmodel` CLIを同梱します。実行時依存はバンドル済みです。Web UIも同じパッケージの公開エントリから読み込み、スタンドアロンHTMLへ埋め込みます。
+
 ## API / CLI
 
 ```sh

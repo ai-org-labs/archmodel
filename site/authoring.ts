@@ -1,7 +1,7 @@
 import {scenarioTemplates} from './scenario-templates.js';
-import {fieldLabels as labels,scenarioFormats,qualityCategories,qualityAttributeCategory,decisionCategories,policyCategories} from '../src/model/presentation.js';
-import {EMPTY_MODEL,editableFields,definitions,suggestId,saveEntity,linkEntities,mergeContribution,parseModel,kinds} from '../src/index.js';
-import type {Model,Kind} from '../src/index.js';
+import {fieldLabels as labels,scenarioFormats,qualityCategories,qualityAttributeCategory,decisionCategories,policyCategories} from '@archmodel/core';
+import {EMPTY_MODEL,editableFields,definitions,suggestId,saveEntity,linkEntities,mergeContribution,parseModel,kinds} from '@archmodel/core';
+import type {Model,Kind} from '@archmodel/core';
 const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 
