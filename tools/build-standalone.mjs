@@ -1,5 +1,5 @@
 import { build } from "vite";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 // IIFE, local icons, and inline styles allow opening this file via file://,
@@ -28,3 +28,10 @@ await mkdir(`${root}site-dist`, { recursive: true });
 await writeFile(`${root}site-dist/standalone.html`, html);
 await writeFile(`${root}site-dist/.nojekyll`, "");
 console.log(`Standalone playground: ${(Buffer.byteLength(html) / 1024).toFixed(0)} KB (all assets included)`);
+
+// Publish canonical resources alongside the rendered pages for people and AI tools.
+for (const dir of ['syntax', 'schema', 'docs', 'syntax/examples']) await mkdir(`${root}site-dist/${dir}`, {recursive:true});
+for (const path of ['syntax/reference.md', 'schema/archmodel.schema.json', 'docs/AI_PROMPT_TEMPLATE.md', 'syntax/examples/design-map.archmodel.yaml', 'syntax/examples/bottom-up.archmodel.yaml', 'syntax/examples/customer-platform.archmodel.yaml']) await copyFile(`${root}${path}`, `${root}site-dist/${path}`);
+const prompt = await readFile(`${root}docs/AI_PROMPT_TEMPLATE.md`, 'utf8');
+const reference = await readFile(`${root}syntax/reference.md`, 'utf8');
+await writeFile(`${root}site-dist/archmodel-ai-prompt.txt`, `${prompt.trim()}\n\n---\n\n${reference.trim()}\n`);

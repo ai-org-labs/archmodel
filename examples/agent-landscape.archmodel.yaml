@@ -1,0 +1,24 @@
+version: '0.1'
+product:
+  id: document-analysis
+  name: 社内PDF解析
+  status: draft
+  purpose: 社員がPDFの内容を把握し、確認すべき点を見つけられる
+  primary_users:
+    - 社員
+    - 管理者
+  user_value: 文書を読む時間を減らし、確認すべき点を把握できる
+  scope:
+    - PDFの受付
+    - 要約と注意点の確認
+    - 解析履歴の監査
+  capabilities:
+    - id: submit-pdf
+      name: PDFを解析に渡せる
+      status: draft
+    - id: review-analysis
+      name: 要約と注意点を確認できる
+      status: draft
+    - id: audit-history
+      name: 解析履歴を監査できる
+      status: draft

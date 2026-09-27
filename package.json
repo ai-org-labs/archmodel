@@ -10,7 +10,7 @@
     "build": "npm run build:library && npm run typecheck && vite build -c vite.config.site.ts && node tools/build-standalone.mjs",
     "preview": "vite preview -c vite.config.site.ts --host 127.0.0.1",
     "build:library": "vite build -c vite.config.library.ts && tsc -p tsconfig.library.json",
-    "verify": "node tools/generate-field-reference.mjs --check && npm run build && npm test && node tools/verify-site.mjs",
+    "verify": "node tools/generate-field-reference.mjs --check && npm run build && npm test && node tools/verify-site.mjs && node tools/verify-questioning-cli.mjs",
     "cli": "node tools/cli.mjs",
     "reference": "node tools/generate-field-reference.mjs",
     "prepack": "npm run build:library"

@@ -62,7 +62,7 @@ ContractはBehaviorでもComponentでもなく、API・Event・Message・外部�
 - Contract.verified_by: 契約を保証するVerification IDの配列。
 - Component.interfacesはRESTなどの補足文字列です。接続先や契約を表す場合は上記の参照を使います。
 
-マップではContractをLogical Components列に併記します。API / Event契約Viewではuses / provides / consumes / verifiedByを表示します。Whyではこれらの参照から価値の根拠を逆引きします。
+マップではContractをComponent列に併記します。API / Event契約Viewではuses / provides / consumes / verifiedByを表示します。Whyではこれらの参照から価値の根拠を逆引きします。
 
 ## Scenario
 
@@ -81,7 +81,7 @@ type / specificationを正規形とします。typeはgherkin / state_transition
 
 ## Quality ProfileとQuality参照
 
-Capability.qualityは属性名をキーとする正式なProfile糖衣構文です。キーはavailability / resilience / security / performance / observability / audit / deployment / costです。
+Capability.qualityは属性名をキーとする正式なProfile糖衣構文です。キーはQuality.attributeと同じEnumです（下記の全フィールド一覧を参照）。costは品質属性ではなく、Decision.categoryなどで扱います。
 Capability.qualitiesは既存Quality IDへの通常参照（文字列配列）です。トップレベルqualitiesはQuality定義の配列です。
 
 ```yaml
@@ -171,7 +171,7 @@ Scenarioはtype / specification、Behaviorはuse_cases、Policyはrules、Decisi
 
 ## View
 
-7列の設計マップは価値から技術実現までを表示し、CapabilityとQualityの行を揃え、Behavior内にScenarioを配置します。ContractはLogical Components列で論理責務の契約として表示します。座標は意味モデルから自動生成します。
+7列の設計マップは価値から技術実現までを表示し、CapabilityとQualityの行を揃え、Behavior内にScenarioを配置します。ContractはComponent列で論理責務の契約として表示します。座標は意味モデルから自動生成します。
 `renderDesignMap(model, {expanded: true})`はGherkin本文付きSVG、`renderView(model, 'connections')`は実接続の構成図、`renderView(model, 'contracts')`は契約関係図です。元のarchitecture Viewは要求・Component・Realizationのトレーサビリティです。
 
 <!-- GENERATED FIELD TYPES -->

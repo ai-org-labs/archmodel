@@ -1,8 +1,30 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
-import { renderDesignMap, parseModel, validateModel, nextQuestion, traceWhy, renderView, qualityMatrix, toMarkdown, toYaml, backlogCandidates, directoryProposal } from '../dist/archmodel.js';
+import { renderDesignMap, parseModel, validateModel, nextQuestion, planNextQuestions, traceWhy, renderView, qualityMatrix, toMarkdown, toYaml, backlogCandidates, directoryProposal } from '../dist/archmodel.js';
 const [command,file,arg,...rest]=process.argv.slice(2);
-const help='Usage: npm run cli -- <validate|question|why|view|matrix|json|yaml|markdown|backlog|directories> file.archmodel.yaml [id|view] [--strict]';
+const help='Usage: npm run cli -- <validate|question|plan|why|view|matrix|json|yaml|markdown|backlog|directories> file.archmodel.yaml [id|view] [--strict]\nPlanner: plan|question file [--phase landscape|shape|depth|realization|assurance] [--focus id[,id]] [--depth overview|normal|deep] [--locale ja|en] [--format json|markdown]';
+function plannerOptions(args) {
+ const context = {}, allowed = ['--phase', '--focus', '--depth', '--locale', '--format'];
+ let format = 'json';
+ for (let i = 0; i < args.length; i++) {
+  const flag = args[i];
+  if (!allowed.includes(flag)) throw new Error(`Unknown option: ${flag}`);
+  const value = args[++i];
+  if (!value || value.startsWith('--')) throw new Error(`Missing value: ${flag}`);
+  if (flag === '--phase') context.phase = value;
+  if (flag === '--focus') context.focusIds = [...(context.focusIds ?? []), ...value.split(',')];
+  if (flag === '--depth') context.userRequestedDepth = value;
+  if (flag === '--locale') context.locale = value;
+  if (flag === '--format') format = value;
+ }
+ if (!['json', 'markdown'].includes(format)) throw new Error('Format must be json or markdown');
+ return { context, format };
+}
+const escapeMarkdown = s => String(s).replace(/[\\`*_{}\[\]<>#|]/g, c => `\\${c}`).replace(/\r?\n/g, ' ');
+function planMarkdown(plan) {
+ const question = q => `- **${escapeMarkdown(q.strategy)}** ${escapeMarkdown(q.message)} (${escapeMarkdown(q.targetId ?? 'model')}; score=${q.score})`;
+ return `# Question plan: ${plan.phase}\n\n## Primary\n\n${plan.primary ? question(plan.primary) : 'None'}\n\n## Related\n\n${plan.related.map(question).join('\n') || 'None'}\n\n## Deferred\n\n${plan.deferred.map(question).join('\n') || 'None'}\n\nReasons: ${plan.rationaleCodes.join(', ')}\n`;
+}
 try {
  if(!file||!command)throw new Error(help);
  const model=parseModel(await readFile(file,'utf8')),diagnostics=validateModel(model);
@@ -12,7 +34,16 @@ try {
   if(diagnostics.some(d=>d.severity==='error'))throw new Error(diagnostics.map(d=>`${d.path}: ${d.message}`).join('\n'));
   let result;
   switch(command){
-   case 'question': result=nextQuestion(model);break;
+   case 'question':
+   case 'plan': {
+    const args = [arg, ...rest].filter(x => x !== undefined);
+    // No flags preserves the exact historical Question response.
+    if (command === 'question' && !args.length) { result = nextQuestion(model); break; }
+    const { context, format } = plannerOptions(args);
+    const plan = planNextQuestions(model, context);
+    result = format === 'markdown' ? planMarkdown(command === 'question' ? { ...plan, related: [], deferred: [] } : plan) : command === 'plan' ? plan : plan.primary;
+    break;
+   }
    case 'why': if(!model.entities.some(e=>e.id===arg))throw new Error(`Unknown ID: ${arg}`);result=traceWhy(model,arg);break;
    case 'view': if(!['map','connections','contracts','capability','behavior','architecture','policy','decision','verification','implementation','impact'].includes(arg??'capability'))throw new Error('Unknown view');result=arg==='map'?renderDesignMap(model).svg:renderView(model,arg??'capability').svg;break;
    case 'matrix': result=qualityMatrix(model);break;

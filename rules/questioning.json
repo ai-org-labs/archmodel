@@ -1,5 +1,17 @@
 {
-  "priorities": {"product": 100, "capability": 90, "behavior": 80, "scenario": 75, "quality": 70, "policy": 65, "decision": 55, "component": 50, "realization": 40, "verification": 60, "evidence": 30},
+  "priorities": {
+    "product": 100,
+    "capability": 90,
+    "behavior": 80,
+    "scenario": 75,
+    "quality": 70,
+    "policy": 65,
+    "decision": 55,
+    "component": 50,
+    "realization": 40,
+    "verification": 60,
+    "evidence": 30
+  },
   "messages": {
     "ja": {
       "NO_PRODUCT": "このシステムは誰に、どのような価値を提供しますか？Productの目的と責任範囲を教えてください。",
@@ -28,7 +40,88 @@
       "UNCOVERED": "At which test level and by what method will you verify {name}?",
       "ORPHAN_COMPONENT": "Which behavior, quality or policy needs {name}?",
       "ORPHAN_REALIZATION": "Which logical responsibility does {name} implement?",
-      "NO_PARENT": "Which higher-level value or capability owns {name}?"
+      "NO_PARENT": "Which higher-level value or capability owns {name}?",
+      "NO_CAPABILITY": "What main things can users do with this product?",
+      "PUBLIC_AUTH": "How should access to the publicly exposed {name} be authenticated?",
+      "UNBOUND_DECISION": "Which design elements are affected by {name}?",
+      "NO_EVIDENCE": "Where is the evidence supporting the result of {name}?",
+      "NO_POLICY_TARGET": "Which design elements does {name} apply to?",
+      "INVALID_GHERKIN": "What observable Given, When and Then describe {name}?",
+      "STATE_GAP": "What implementation or verification results support the state of {name}?"
+    }
+  },
+  "conversation_messages": {
+    "ja": {
+      "PRODUCT_LANDSCAPE": "「{name}」は誰のどんな困りごとを解決し、どこまでを担当するシステムですか？",
+      "CAPABILITY_SHAPE": "「{name}」は誰が使い、何を渡すと何を受け取れるものですか？",
+      "CAPABILITY_BEHAVIORS": "「{name}」を実現するために、利用者が行う主な操作やシステムの振る舞いは何ですか？",
+      "BEHAVIOR_FLOW": "「{name}」は何をきっかけに始まり、成功時と主な失敗時に何が起きますか？",
+      "QUALITY_DISCOVERY": "方式を左右する品質条件はありますか？特に重要な能力と、守りたい水準を教えてください。",
+      "DECISION_REVIEW": "「{name}」の提案を採用するか、トレードオフを踏まえて判断できますか？",
+      "REPRESENTATIVE_SCENARIO": "「{name}」の代表的な正常系・主な失敗・高リスク境界のうち、まず一つの状況と期待結果を教えてください。",
+      "WHY": "「{name}」は、誰のどんな操作・品質・価値のために必要ですか？既存の設計要素とのつながりを教えてください。",
+      "PARENT_PROPOSAL": "「{name}」を「{parent}」に属するDraft案として補完できます。意図と一致するか確認してください。",
+      "QUALITY_DETAILS": "「{name}」で保証したいことと、達成を判断する条件は何ですか？",
+      "POLICY_DETAILS": "「{name}」で守るべきルールと適用範囲は何ですか？",
+      "SCENARIO_DETAILS": "「{name}」の具体的な状況と、観測できる結果を教えてください。",
+      "COMPONENT_DETAILS": "「{name}」はどんな責務を引き受けますか？",
+      "REALIZATION_DETAILS": "「{name}」はどの環境やコードで動作しますか？",
+      "VERIFICATION_DETAILS": "「{name}」では何を、どの方法とレベルで確かめますか？",
+      "EVIDENCE_DETAILS": "「{name}」の結果を確認できる記録はどこにありますか？",
+      "CONTRACT_DETAILS": "「{name}」で外部とやり取りする内容と守るべき約束は何ですか？",
+      "DECISION_DETAILS": "「{name}」では何を選び、どんな理由とトレードオフがありますか？",
+      "MISSING_ASPECTS": "「{name}」について、まだ決まっていない{aspects}を教えてください。",
+      "DESIGN_DETAILS": "「{name}」の未確定な設計を具体化できますか？"
+    },
+    "en": {
+      "PRODUCT_LANDSCAPE": "Who benefits from {name}, what problem does it solve, and what is its scope?",
+      "CAPABILITY_SHAPE": "Who uses {name}, what do they provide, and what do they receive?",
+      "CAPABILITY_BEHAVIORS": "What main actions and behaviors make {name} possible?",
+      "BEHAVIOR_FLOW": "What starts {name}, and what happens on success or a major failure?",
+      "QUALITY_DISCOVERY": "Which quality constraints could shape the architecture, and which capabilities and targets matter most?",
+      "DECISION_REVIEW": "Can you decide whether to adopt the proposal {name}, considering its trade-offs?",
+      "REPRESENTATIVE_SCENARIO": "Give one representative success, major failure or high-risk boundary example for {name}, with its expected outcome.",
+      "WHY": "Which user action, quality or value needs {name}, and how does it connect to the existing design?",
+      "PARENT_PROPOSAL": "{name} can be proposed as a draft child of {parent}; check that this matches the intended scope.",
+      "QUALITY_DETAILS": "What must {name} guarantee, and how will you judge success?",
+      "POLICY_DETAILS": "What rule does {name} impose, and where does it apply?",
+      "SCENARIO_DETAILS": "What concrete situation and observable outcome describe {name}?",
+      "COMPONENT_DETAILS": "Which responsibilities does {name} own?",
+      "REALIZATION_DETAILS": "What environment or code implements {name}?",
+      "VERIFICATION_DETAILS": "What will {name} check, by what method and at which level?",
+      "EVIDENCE_DETAILS": "Where is the record supporting {name}?",
+      "CONTRACT_DETAILS": "What is exchanged through {name}, and what guarantees must it provide?",
+      "DECISION_DETAILS": "What does {name} choose, and why, with which trade-offs?",
+      "MISSING_ASPECTS": "For {name}, please clarify the unresolved aspects: {aspects}.",
+      "DESIGN_DETAILS": "Can you clarify the unresolved design for {name}?"
+    }
+  },
+  "conversation_fields": {
+    "ja": {
+      "purpose": "何のために必要か",
+      "primary_users": "主な利用者",
+      "user_value": "利用者が得る価値",
+      "scope": "担当する範囲",
+      "actor": "誰が使うか",
+      "inputs": "何を渡すか",
+      "outputs": "何を受け取れるか",
+      "trigger": "何をきっかけに始まるか",
+      "preconditions": "開始前に満たす条件",
+      "outcomes": "成功すると何が起きるか",
+      "failure_behaviors": "主な失敗時に何が起きるか"
+    },
+    "en": {
+      "purpose": "the purpose",
+      "primary_users": "the main users",
+      "user_value": "the value to users",
+      "scope": "the scope",
+      "actor": "who uses it",
+      "inputs": "what they provide",
+      "outputs": "what they receive",
+      "trigger": "what starts it",
+      "preconditions": "conditions before it starts",
+      "outcomes": "what happens on success",
+      "failure_behaviors": "what happens on major failures"
     }
   }
 }

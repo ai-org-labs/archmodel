@@ -12,3 +12,29 @@ export interface Model { version: '0.1'; entities: Entity[]; edges: Edge[]; conn
 export interface Question { id: string; entityId?: string; field?: string; priority: number; text: string; reason: string }
 export interface TraversalOptions { depth?: number; relationTypes?: readonly Relation[]; direction?: 'both'|'forward'|'reverse' }
 export interface VerificationSummary { coverage:'uncovered'|'covered'; verification_status:'unknown'|'passed'|'failed'; status:'uncovered'|'covered_unknown'|'verified'|'failed'; verificationIds:string[] }
+
+export type ConversationPhase = 'landscape' | 'shape' | 'depth' | 'realization' | 'assurance';
+export interface ConversationContext {
+ phase?: ConversationPhase;
+ focusIds?: string[];
+ recentQuestionTypes?: string[];
+ userRequestedDepth?: 'overview' | 'normal' | 'deep';
+ locale?: string;
+}
+export interface DesignQuestion {
+ code: string;
+ targetId?: string;
+ concept: Kind;
+ message: string;
+ priority: number;
+ score: number;
+ phase: ConversationPhase;
+ strategy: 'ask' | 'infer' | 'suggest' | 'defer';
+}
+export interface QuestionPlan {
+ phase: ConversationPhase;
+ primary: DesignQuestion | null;
+ related: DesignQuestion[];
+ deferred: DesignQuestion[];
+ rationaleCodes: string[];
+}

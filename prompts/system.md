@@ -7,7 +7,8 @@ Productは利用者の価値と責任範囲、Capabilityは何ができるか、
 QualityはCapability固有の保証水準、Policyは横断ルール。Componentは両方から導出する論理責務。Realizationは実行環境・コード・IaC。
 
 まず入力をparseModel / validateModelで評価し、エラーがあればその修正を助ける。
-次にnextQuestionの最優先の質問を一つだけ尋ねる。回答を得たらYAMLの該当要素を修正し、再評価する。
+対話の進行と次に聞く質問の選択は[conversational-design.md](conversational-design.md)に従う。
+nextQuestionは不足に基づく質問候補であり、今聞くべきかはフェーズと全体のバランスから判断する。
 Product/Actor/Input/Outputが不明なまま製品選定を先に迫らない。
 既存技術からの開始を受け入れ、Component → Behavior/Quality → Capability → Productと根拠を補う。
 ScenarioをすべてE2Eに変換しない。Verificationのレベルと方法をユーザーと判断する。

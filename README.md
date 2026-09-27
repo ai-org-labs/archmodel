@@ -2,17 +2,27 @@
 
 ProductからCapability、Behavior、Scenario、Quality、Component、技術実現、検証までをつなぐYAML DSLと設計マップです。
 
-主画面は7つの縦列で設計全体を表示します。Capabilityの中にBehavior、その中にScenarioを置き、Quality Profileを対応するCapabilityと同じ行に揃えます。Product、Policies、Design Decisions、Logical Components、Technical Realizationは全体を通した列です。
+主画面は7つの縦列で設計全体を表示します。Capabilityの中にBehavior、その中にScenarioを置き、Qualityを対応するCapabilityと同じ行に揃えます。Product、Policy、Decision、Component、Realizationは全体を通した列です。
 
 [archmap-mermaid](https://github.com/ai-org-labs/archmap-mermaid)から描画・配線・SVG基盤を引き継いだ独立リポジトリです。元リポジトリへの実行時依存はありません。DSLの意味モデルとレーン配置は新規実装です。
 
 ## 公開版
 
-- [設計マップを開く](https://ai-org-labs.github.io/archmodel/)
+- [Overview](https://ai-org-labs.github.io/archmodel/)
+- [Playground — YAMLと設計マップを編集](https://ai-org-labs.github.io/archmodel/playground/)
+- [Syntax — 構文・AIプロンプト](https://ai-org-labs.github.io/archmodel/syntax/)
+- [Examples](https://ai-org-labs.github.io/archmodel/examples/)
 - [スタンドアロンHTML](https://ai-org-labs.github.io/archmodel/standalone.html)
 - [v0.1.0リリース・HTMLダウンロード](https://github.com/ai-org-labs/archmodel/releases/tag/v0.1.0)
 
-公開版も単体HTMLで動作します。リリースの `archmodel-v0.1.0.html` を保存するとオフラインで開けます。モデルはブラウザー内に保存されるため、環境を移す際はYAML保存をご利用ください。
+GitHub PagesはOverview / Playground / Syntax / Examplesの4ページ構成です。SyntaxのAIプロンプトは構文リファレンス全文を含み、コピー・テキスト保存できます。Playgroundはブラウザー内でYAMLを検証・描画し、サンプル別の下書きを保存します。AIへの送信は行いません。
+
+オフライン版は単体HTMLで動作し、構文とAIプロンプトも含みます。リリースの `archmodel-v0.1.0.html` を保存するとオフラインで開けます。モデルはブラウザー内に保存されるため、環境を移す際はYAML保存をご利用ください。
+
+## 対話で設計する
+
+自然言語の回答をArchModel YAMLへ反映する、repository-based設計Agentを追加しています（Phase A〜C）。
+[利用手順](docs/AGENT_USAGE.md)から開始できます。[設計書と今後の実装範囲](docs/AGENT_DESIGN.md)も参照してください。
 
 ## 起動
 

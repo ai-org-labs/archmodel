@@ -1,0 +1,73 @@
+{
+  "version": "0.1",
+  "limits": {
+    "primary_questions_per_turn": 1,
+    "related_subquestions_per_turn": 2,
+    "first_pass_capability_target": [
+      3,
+      7
+    ],
+    "first_pass_behavior_target": [
+      2,
+      7
+    ],
+    "first_pass_scenario_target": 3
+  },
+  "scoring": {
+    "focus_bonus": 30,
+    "risk_bonus": 300,
+    "why_bonus": 120,
+    "breadth_bonus": 25,
+    "granularity_penalty": 25,
+    "premature_depth_penalty": 60,
+    "repetition_penalty": 45
+  },
+  "phases": {
+    "landscape": {
+      "weights": {
+        "product": 1,
+        "capability": 1,
+        "behavior": 0.25,
+        "quality": 0.35
+      }
+    },
+    "shape": {
+      "weights": {
+        "capability": 0.8,
+        "behavior": 1,
+        "quality": 0.8,
+        "scenario": 0.25,
+        "component": 0.2
+      }
+    },
+    "depth": {
+      "weights": {
+        "behavior": 0.7,
+        "scenario": 1,
+        "quality": 0.8,
+        "contract": 0.9
+      }
+    },
+    "realization": {
+      "weights": {
+        "component": 1,
+        "decision": 0.9,
+        "realization": 1,
+        "behavior": 0.7,
+        "quality": 0.8,
+        "policy": 0.8,
+        "contract": 0.9
+      }
+    },
+    "assurance": {
+      "weights": {
+        "verification": 1,
+        "evidence": 0.7,
+        "quality": 0.8,
+        "policy": 0.8,
+        "scenario": 0.8,
+        "contract": 0.8
+      }
+    }
+  }
+}

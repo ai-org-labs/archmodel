@@ -1,0 +1,8 @@
+import {authoringPrompt,downloadText,escapeHtml,reference} from './content.js';
+import {markdown} from './markdown.js';
+export function guideMarkup(){const doc=markdown(reference);return `<section class="prompt-card" id="ai-prompt"><p class="eyebrow">AI ASSISTED DESIGN</p><h2>AI用プロンプト</h2><p>要件を書き換えて、お使いのAIに貼り付けてください。ArchModelの設計手順と、このページの構文リファレンス全文を含みます。</p><div class="guide-actions"><button id="copy-prompt">プロンプトをコピー</button><button id="download-prompt">プロンプトを保存 (.txt)</button></div><p id="prompt-status" role="status"></p><details id="prompt-details"><summary>プロンプト全文</summary><label for="prompt-source">要件欄を書き換えて利用できます</label><textarea id="prompt-source" readonly spellcheck="false">${escapeHtml(authoringPrompt)}</textarea></details></section><div class="reference-layout"><aside class="reference-toc"><h2>構文の目次</h2><nav aria-label="構文の目次">${doc.toc.map(h=>`<a href="#${h.id}">${escapeHtml(h.title)}</a>`).join('')}</nav></aside><article class="reference-article">${doc.html}</article></div>`;}
+export function mountGuide(root:ParentNode=document){
+ const get=<T extends HTMLElement>(id:string)=>root.querySelector<T>(`#${id}`)!;
+ get('copy-prompt').onclick=async()=>{try{await navigator.clipboard.writeText(authoringPrompt);get('prompt-status').textContent='コピーしました。AIに貼り付け、要件欄を書き換えてください。';}catch{get<HTMLDetailsElement>('prompt-details').open=true;const area=get<HTMLTextAreaElement>('prompt-source');area.focus();area.select();get('prompt-status').textContent='自動コピーできませんでした。選択した全文を ⌘ / Ctrl + C でコピーするか、.txtを保存してください。';}};
+ get('download-prompt').onclick=()=>{downloadText('archmodel-ai-prompt.txt',authoringPrompt);get('prompt-status').textContent='プロンプトを保存しました。';};
+}

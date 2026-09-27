@@ -1,11 +1,13 @@
+import {examples,navigation,siteBase} from './content.js';
+import {guideMarkup,mountGuide} from './guide.js';
+import './playground.css';
 import {laneCopy,laneLabel,type LaneLanguage} from '@archmodel/core';
-import {fieldLabels,relationLabels} from '@archmodel/core';
+import {fieldLabel,fieldLabels,relationLabels} from '@archmodel/core';
 import {DocumentHistory} from './history.js';
 import {installAuthoring} from './authoring.js';
 import './site.css';
 import sample from '../syntax/examples/design-map.archmodel.yaml?raw';
 import bottomUp from '../syntax/examples/bottom-up.archmodel.yaml?raw';
-import reference from '../syntax/reference.md?raw';
 import {deleteEntity,parseModel,validateModel,nextQuestion,renderDesignMap,toMarkdown,availableLinks,linkEntities,connectionTypes,EMPTY_MODEL} from '@archmodel/core';
 import type {Model,TraversalOptions,Relation,Kind} from '@archmodel/core';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
@@ -17,7 +19,7 @@ document.body.innerHTML=`<header><div class="brand"><span class="brand-mark">A</
 <aside id="editor-panel" class="panel editor-panel" hidden><div class="panel-head"><div><small>SOURCE OF TRUTH</small><h2>Design Model</h2></div><button id="close-editor" aria-label="エディタを閉じる">×</button></div><p class="panel-note">YAMLの内容が、そのまま設計マップに展開されます。</p><label for="source" class="sr-only">ArchModel DSL</label><textarea id="source" spellcheck="false" wrap="off"></textarea><div class="panel-bottom"><span id="storage">変更は自動保存されます</span><button id="markdown">Markdown保存</button><button id="json">JSON保存</button></div></aside>
 <aside id="inspector" class="panel inspector" hidden><div class="panel-head"><div><small id="detail-kind">DESIGN ELEMENT</small><h2 id="detail-title">設計要素</h2></div><button id="close-inspector" aria-label="詳細を閉じる">×</button></div><div id="detail"></div></aside>
 <aside id="check-panel" class="panel check-panel" hidden><div class="panel-head"><h2>設計の確認</h2><button id="close-checks" aria-label="確認を閉じる">×</button></div><section><h3>次の問い</h3><p id="question"></p></section><div id="diagnostics" aria-live="polite"></div></aside>
-<dialog id="reference"><div class="panel-head"><h2>DSLリファレンス</h2><button id="close-help">閉じる</button></div><pre></pre></dialog>`;
+<dialog id="reference"><div class="panel-head"><h2>Syntax & AI prompts</h2><button id="close-help">閉じる</button></div><div id="guide-content"></div></dialog>`;
 // One compact workspace bar; secondary controls stay available on demand.
 const workspaceHeader=document.querySelector('header')!;
 const workspaceIdentity=document.createElement('div');workspaceIdentity.className='workspace-identity';
@@ -36,6 +38,11 @@ workspaceTools.append(el('checks'),el('edit'));
 headerMenu('ファイル',['new-model','add-element','load','file','save','svg','help'],'file-menu');
 workspaceTools.querySelector('#edit')!.textContent='〈 〉 DSL';
 workspaceHeader.replaceChildren(workspaceIdentity,workspaceTools);
+const standalone=document.body.dataset.standalone==='true';
+const base=siteBase(document.body.dataset.page??'home',standalone);
+const selectedExample=examples.find(e=>e.id===new URLSearchParams(location.search).get('sample'));
+document.body.classList.add('playground-page');
+workspaceHeader.insertAdjacentHTML('beforebegin',`<div class="playground-nav">${standalone?'<strong>ArchModel · Offline Playground</strong>':navigation('playground',base)}<div><button id="open-guide">Syntax / AIプロンプト</button>${standalone?'':`<a href="${base}standalone.html" download>オフライン版</a>`}</div></div>`);
 el('summary').classList.add('sr-only');workspaceHeader.append(el('summary'));
 document.querySelector('.map-toolbar')!.remove();
 document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>{
@@ -54,8 +61,8 @@ for(const [label,collapse]of [['すべてのCapabilityを閉じる',true],['す�
 for(const [label,collapse]of [['すべてのBehaviorを閉じる',true],['すべてのBehaviorを開く',false]] as const){const button=document.createElement('button');button.textContent=label;button.onclick=()=>{collapsedCapabilities.clear();collapsedBehaviors.clear();if(collapse)model.entities.filter(e=>e.kind==='behavior').forEach(e=>collapsedBehaviors.add(e.id));draw();};foldingActions.append(button);}
 document.querySelector('.display-menu .header-menu-body')!.append(foldingActions);
 try{el<HTMLSelectElement>('lane-language').value=localStorage.getItem('archmodel:lane-language')==='ja'?'ja':'en';}catch{}
-const storageKey='archmodel:canonical:v0.1';
-try{editor.value=localStorage.getItem(storageKey)??EMPTY_MODEL;}catch{editor.value=EMPTY_MODEL;el('storage').textContent='下書きを保存できません。YAML保存をご利用ください。';}
+const storageKey=selectedExample?`archmodel:playground:${selectedExample.id}:v0.1`:'archmodel:canonical:v0.1';
+try{editor.value=localStorage.getItem(storageKey)??selectedExample?.source??sample;}catch{editor.value=selectedExample?.source??sample;el('storage').textContent='下書きを保存できません。YAML保存をご利用ください。';}
 const documentHistory=new DocumentHistory(editor.value);
 function syncHistory(){el<HTMLButtonElement>('undo').disabled=!documentHistory.canUndo&&editor.value===documentHistory.current;el<HTMLButtonElement>('redo').disabled=!documentHistory.canRedo||editor.value!==documentHistory.current;}
 function commitEditor(){clearTimeout(timer);documentHistory.record(editor.value);syncHistory();}
@@ -79,7 +86,7 @@ function inspect(){
  el('detail-kind').textContent=entity.kind;el('detail-title').textContent=entity.name;
  const fields=Object.entries(entity.data).filter(([key])=>fieldLabels[key]&&key!=='name');
  const edges=model.edges.filter(e=>e.from===entity.id||e.to===entity.id);
- el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。子要素はマップの＋で追加できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(entity.kind==='quality'&&key==='level'?'要求レベル：Level':fieldLabels[key])}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
+ el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。子要素はマップの＋で追加できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(fieldLabel(key,entity.kind))}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
 }
 
 function draw(refit=true){
@@ -99,8 +106,8 @@ function update(){
  for(const id of ['json','markdown'])el<HTMLButtonElement>(id).disabled=!!errors.length;
  draw();if(selectedId)inspect();try{localStorage.setItem(storageKey,editor.value);}catch{el('storage').textContent='下書き保存に失敗しました。YAML保存をご利用ください。';}
 }
-function openEditor(){el('editor-panel').hidden=false;el('edit').setAttribute('aria-expanded','true');}
-function closeEditor(){el('editor-panel').hidden=true;el('edit').setAttribute('aria-expanded','false');}
+function openEditor(){el('editor-panel').hidden=false;el('edit').setAttribute('aria-expanded','true');if(autoFit)requestAnimationFrame(fit);}
+function closeEditor(){el('editor-panel').hidden=true;el('edit').setAttribute('aria-expanded','false');if(autoFit)requestAnimationFrame(fit);}
 function newSource(source:string,record=true){el('merge-result').textContent='';if(record){commitEditor();documentHistory.record(source);}cancelMapLink();clearTimeout(timer);editor.value=source;selectedId='';autoFit=true;el('inspector').hidden=true;update();syncHistory();}
 editor.addEventListener('input',()=>{clearTimeout(timer);syncHistory();timer=setTimeout(()=>{commitEditor();update();},400);});
 function travelHistory(redo=false){commitEditor();newSource(redo?documentHistory.redo():documentHistory.undo(),false);}
@@ -125,7 +132,7 @@ el('canvas').addEventListener('wheel',e=>{e.preventDefault();const unit=e.deltaM
 el('save').onclick=()=>save('design.archmodel.yaml',editor.value,'text/yaml');el('svg').onclick=()=>{clearTimeout(timer);update();if(svg)save('design-map.svg',svg,'image/svg+xml');};
 el('json').onclick=()=>{clearTimeout(timer);update();if(!validateModel(model).some(d=>d.severity==='error'))save('design.json',JSON.stringify(model,null,2),'application/json');};el('markdown').onclick=()=>{clearTimeout(timer);update();if(!validateModel(model).some(d=>d.severity==='error'))save('design.md',toMarkdown(model),'text/markdown');};
 el('load').onclick=()=>el<HTMLInputElement>('file').click();el('file').onchange=async()=>{const file=el<HTMLInputElement>('file').files?.[0];if(file)newSource(await file.text());};
-el('reference').querySelector('pre')!.textContent=reference;el('help').onclick=()=>el<HTMLDialogElement>('reference').showModal();el('close-help').onclick=()=>el<HTMLDialogElement>('reference').close();
+el('guide-content').innerHTML=guideMarkup();mountGuide(el('reference'));el('help').onclick=()=>el<HTMLDialogElement>('reference').showModal();el('open-guide').onclick=()=>el<HTMLDialogElement>('reference').showModal();el('close-help').onclick=()=>el<HTMLDialogElement>('reference').close();
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){cancelMapLink();closeEditor();el('check-panel').hidden=true;el('inspector').hidden=true;selectedId='';draw(false);}});update();
 
 const authoring=installAuthoring({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource,select:(id)=>{const preserve=qualitySummaryEditingId===id;qualitySummaryEditingId='';select(id,preserve);},save,beginLink});
@@ -262,3 +269,5 @@ el('list-map-links').onclick=()=>{
 };
 
 el('lane-language').onchange=()=>{try{localStorage.setItem('archmodel:lane-language',el<HTMLSelectElement>('lane-language').value);}catch{}draw(false);};
+
+openEditor();

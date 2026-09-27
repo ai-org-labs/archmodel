@@ -8,7 +8,7 @@ describe('design map follows the reference structure',()=>{
   const m=model();expect(validateModel(m)).toEqual([]);
   const layout=computeDesignMap(m),lanes=layout.boxes.filter(b=>b.role==='lane');
   expect(lanes).toHaveLength(7);expect(new Set(lanes.map(b=>b.height)).size).toBe(1);
-  expect(lanes.map(b=>b.text[0].text)).toEqual(['Product','Capabilities','Quality Profiles','Policies','Design Decisions','Logical Components','Technical Realization']);
+  expect(lanes.map(b=>b.text[0].text)).toEqual(['Product','Capability','Quality','Policy','Decision','Component','Realization']);
  });
  it('nests Behavior in Capability and Scenario in Behavior; aligns each Quality row',()=>{
   const layout=computeDesignMap(model());expect(layout.rows).toHaveLength(2);

@@ -19,7 +19,7 @@ export function validateModel(model:Model):Diagnostic[]{
   if(['scenario','quality','policy','contract'].includes(e.kind)&&!has('verifiedBy'))warn('UNCOVERED',e,'検証が紐付いていません。既存の検証を割り当てるか、新しく作成してください','verified_by');
   if(e.kind==='component'){
    if(!ins.some(x=>x.relation==='realizedBy'))warn('ORPHAN_COMPONENT',e,'この論理コンポーネントが実現する振る舞い・品質要求・ポリシーが未定義です');
-   if(!has('implementedBy'))warn('NO_IMPLEMENTATION',e,'Technical Realizationがありません');
+   if(!has('implementedBy'))warn('NO_IMPLEMENTATION',e,'Realizationがありません');
   }
   if(e.kind==='realization'){
    if(!ins.some(x=>x.relation==='implementedBy'))warn('ORPHAN_REALIZATION',e,'この技術実現の論理責務が未定義です');

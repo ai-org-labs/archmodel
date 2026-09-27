@@ -1,5 +1,6 @@
+import schema from '../../schema/archmodel.schema.json';
 import {laneLabel,type LaneLanguage} from './lane-labels.js';
-import {fieldLabels,scenarioFormats,qualityCategories,qualityCategory,decisionCategories,policyCategories} from './presentation.js';
+import {fieldLabel,enumLabel,qualityCategories,qualityCategory,decisionCategories,policyCategories} from './presentation.js';
 import { escapeXml } from '../focused/render.js';
 import { wrapText } from '../focused/layout.js';
 import { relatedIds, validateModel } from './analysis.js';
@@ -14,20 +15,20 @@ const GAP=12, PAD=14, HEADER=58, FONT=14, LINE=20;
 const baseWidths=[196,744,232,216,232,240,264];
 const qualityLaneWidth=204,EMPTY_LANE=36;
 const compactContent=(label:string):Content=>({height:240,text:[{text:label,tone:'title',x:12,y:48,size:13,weight:650,color:'#30343b',rotate:90}]});
-const labels=['Product','Capabilities','Quality Profiles','Policies','Design Decisions','Logical Components','Technical Realization'];
+const laneKeys=['product','capability','quality','policy','decision','component','realization'];
 // Surface colors follow roles: blue-gray containers and warm paper content.
 const fills={lane:'#e1f2ef',capability:'#e1f2ef',meta:'#fffdf8',behavior:'#e1f2ef',detail:'#fffdf8',scenario:'#fffdf8',card:'#fffdf8'};
 
 const asText=(v:unknown)=>Array.isArray(v)?v.join(' / '):String(v??'—');
 type Content = { height:number; text:MapText[] };
-function content(width:number,title:string,fields:Array<[string,unknown]>,size=FONT):Content{
+function content(width:number,title:string,fields:Array<[string,unknown]>,size=FONT,kind?:Kind):Content{
  const text:MapText[]=[];let y=PAD;
  const lines=(value:string,fontSize:number,weight:number,color:string,tone:MapText['tone']='body')=>{
   for(const line of wrapText(value,width-PAD*2,fontSize)){y+=LINE;text.push({text:line,x:PAD,y,size:fontSize,weight,color,tone});}
  };
  if(title){lines(title,size+1,650,'#30343b','title');y+=8;}
  for(const [key,value]of fields){
-  if(key){lines(fieldLabels[key]??key,11,500,'#667b85','field');y+=1;}
+  if(key){lines(fieldLabel(key,kind),11,500,'#667b85','field');y+=1;}
   lines(asText(value),size,400,value===undefined?'#78878d':'#415763');y+=9;
  }
  return {height:y+PAD-5,text};
@@ -60,8 +61,8 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
  const policyLaneWidth=232;
  const pWidth=(key:string)=>model.entities.some(e=>e.kind==='policy'&&String(e.data.category??'unspecified')===key)?policyLaneWidth:EMPTY_LANE;
  if(populated[3])widths[3]=PAD*2+policyKeys.reduce((sum,k)=>sum+pWidth(k),0)+(policyKeys.length-1)*GAP;
- const technicalKinds=['runtime','resource','network','data','directory','module','source','iac','deployment'];
- const logicalKinds=['application','domain','data','interface','platform'];
+ const technicalKinds:string[]=schema.$defs.realization.properties.kind.enum;
+ const logicalKinds:string[]=schema.$defs.component.properties.kind.enum;
  const groupKey=(e:Entity)=>e.kind==='component'||e.kind==='realization'?String(e.data.kind??'unspecified'):e.kind;
  const groupedColumns=[{col:5,entityKind:'component' as Kind,keys:[...logicalKinds,'contract']},{col:6,entityKind:'realization' as Kind,keys:[...technicalKinds,'verification','evidence']}].map(config=>{
   const entities=model.entities.filter(e=>config.col===5?['component','contract'].includes(e.kind):['realization','verification','evidence'].includes(e.kind));
@@ -80,7 +81,7 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
  };
  const dataFields=(e:Entity,fields:string[])=>fields.map(key=>[key,e.data[key]] as [string,unknown]);
  const capW=populated[1]?widths[1]:baseWidths[1], metaW=202, behaviorW=capW-PAD*3-metaW, detailW=156, scenarioW=behaviorW-PAD*3-detailW;
- const scenarioContent=(s:Entity)=>content(scenarioW,s.name,options.expanded?[['',s.data.specification]]:[['',s.data.type==='gherkin'?'Given · When · Then':scenarioFormats[String(s.data.type)]??'内容を編集']],13);
+ const scenarioContent=(s:Entity)=>content(scenarioW,s.name,options.expanded?[['',s.data.specification]]:[['',s.data.type?enumLabel('scenario','type',s.data.type):'type 未定義']],13);
  const behaviorPlan=(e:Entity)=>{
   const collapsed=!!options.collapsedBehaviorIds?.includes(e.id);
   const scenarios=children(e.id,'scenario');
@@ -98,7 +99,7 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
  const orphanQualities=kind('quality').filter(e=>!attachedQuality.has(e.id));
  const plans=kind('capability').map(cap=>({cap,behaviors:children(cap.id,'behavior').map(behaviorPlan),qualities:children(cap.id,'quality'),looseScenarios:[] as Entity[]}));
  if(!plans.length||orphanBehaviors.length||orphanScenarios.length||orphanQualities.length)plans.push({cap:undefined as unknown as Entity,behaviors:orphanBehaviors.map(behaviorPlan),qualities:orphanQualities,looseScenarios:orphanScenarios});
- const qualityContent=(e:Entity)=>content(qualityLaneWidth-PAD*2,e.name,[['',e.data.requirement],...(e.data.target!==undefined?[['Target',`${e.data.target}${e.data.unit??''}`] as [string,unknown]]:[]),...(e.data.level?[['Level',e.data.level] as [string,unknown]]:[])]);
+ const qualityContent=(e:Entity)=>content(qualityLaneWidth-PAD*2,e.name,[['',e.data.requirement],...(e.data.target!==undefined?[['target',`${e.data.target}${e.data.unit??''}`] as [string,unknown]]:[]),...(e.data.level?[['level',e.data.level] as [string,unknown]]:[])],FONT,'quality');
  if(populated[2])widths[2]=Math.max(widths[2],...plans.filter(p=>p.cap&&options.collapsedCapabilityIds?.includes(p.cap.id)).map(p=>PAD*2+p.qualities.length*160+Math.max(0,p.qualities.length-1)*GAP));
  // Summary width is a view concern; update following lane positions accordingly.
  for(let i=0;i<x.length;i++)x[i]=PAD+widths.slice(0,i).reduce((sum,w)=>sum+w+GAP,0);
@@ -120,8 +121,8 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
  const side=(entities:Entity[],col:number)=>entities.map(e=>{
   let fields:Array<[string,unknown]>=[['',e.kind==='realization'?e.data.kind:e.kind==='component'?e.data.kind:e.kind],...dataFields(e,sideFields[e.kind]??[]).filter(([,v])=>v!==undefined)];
   if(!options.expanded&&e.kind==='realization')fields=[['',[e.data.kind,e.data.service??e.data.location].filter(Boolean).join(' · ')]];
-  if(!options.expanded&&e.kind==='verification')fields=[['',`${e.data.level??'test'} · ${e.data.result==='passed'?'passed':e.data.result==='failed'?'failed':'未実施'}`]];
-  return {e,c:content((col===3?policyLaneWidth-PAD*2:col===4?decisionLaneWidth-PAD*2:col>=5?240-PAD*2:widths[col]-PAD*2),e.name,fields)};
+  if(!options.expanded&&e.kind==='verification')fields=[['',`${e.data.level??'level 未定義'} · ${e.data.result==='passed'?'passed':e.data.result==='failed'?'failed':'unknown（未実施）'}`]];
+  return {e,c:content((col===3?policyLaneWidth-PAD*2:col===4?decisionLaneWidth-PAD*2:col>=5?240-PAD*2:widths[col]-PAD*2),e.name,fields,FONT,e.kind)};
  });
  const columns=[productCards,[],[],[],[],side([...kind('component'),...kind('contract')],5),side([...kind('realization'),...kind('verification'),...kind('evidence')],6)];
  const sideGroups=groupedColumns.map(config=>({...config,groups:config.groups.map(g=>({...g,cards:side(g.entities,config.col)}))}));
@@ -135,7 +136,7 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
 
  const height=bodyHeight+HEADER+PAD*2;
  // Seven persistent lanes; all figures are projections of IDs in the same semantic graph.
- labels.forEach((_title,i)=>{const key=['product','capability','quality','policy','decision','component','realization'][i];const title=label(key);const lane=add('lane',x[i],PAD,widths[i],height-PAD*2,fills.lane,populated[i]?content(widths[i],title,[]):compactContent(title));lane.collapsed=!populated[i];lane.helpKey=key;});
+ laneKeys.forEach((key,i)=>{const title=label(key);const lane=add('lane',x[i],PAD,widths[i],height-PAD*2,fills.lane,populated[i]?content(widths[i],title,[]):compactContent(title));lane.collapsed=!populated[i];lane.helpKey=key;});
  for(const col of [0]){
   let y=PAD+HEADER;
   for(const item of columns[col]){add(item.e.kind,x[col]+PAD,y,widths[col]-PAD*2,item.c.height,fills.card,item.c,item.e);y+=item.c.height+GAP;}
