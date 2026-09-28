@@ -67,7 +67,8 @@ npm run dev
 
 - [構文リファレンス](syntax/reference.md)
 - [設計マップ用サンプル：2 Capability・4 Behavior・8 Scenario](syntax/examples/design-map.archmodel.yaml)
-- [基本サンプル](syntax/examples/customer-platform.archmodel.yaml)
+- [Exampleの読み方・網羅範囲](docs/EXAMPLES.md)
+- [顧客プラットフォーム詳細サンプル](syntax/examples/customer-platform.archmodel.yaml)
 - [技術から始めるサンプル](syntax/examples/bottom-up.archmodel.yaml)
 - [JSON Schema](schema/archmodel.schema.json)
 - [要件対応と実装範囲](docs/ACCEPTANCE.md)

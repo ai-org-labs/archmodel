@@ -6,9 +6,9 @@ import instructions from '../docs/AI_PROMPT_TEMPLATE.md?raw';
 export {reference};
 export const authoringPrompt=`${instructions.trim()}\n\n---\n\n${reference.trim()}\n`;
 export const examples=[
- {id:'design-map',title:'認証とプロフィール管理',description:'2つのCapabilityから、Behavior・Scenario・Quality・実装・検証までを辿る設計例。',source:designMap},
- {id:'bottom-up',title:'既存の技術構成から設計する',description:'既存のRealizationを出発点に、Componentと利用者の価値をつなぐ設計例。',source:bottomUp},
- {id:'customer-platform',title:'顧客プラットフォーム',description:'Productから検証のEvidenceまで、DSLの基本要素と参照を確認する設計例。',source:customer}
+ {id:'design-map',title:'認証とプロフィール管理',description:'認証とプロフィール管理。入出力・失敗時の動作、9つの品質要求、API契約、監査・証跡を含む57要素。',source:designMap},
+ {id:'bottom-up',title:'既存の技術構成から設計する',description:'設備監視APIから価値を逆引き。8種類のScenario、9種類のRealization、7種類の実接続を含む54要素。',source:bottomUp},
+ {id:'customer-platform',title:'顧客プラットフォーム',description:'認証・監査基盤の詳細設計。4種類のContract、5種類のComponent、移行・運用までを含む54要素。',source:customer}
 ] as const;
 export const escapeHtml=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function siteBase(page:string,standalone=false){return page==='home'||standalone?'./':'../';}

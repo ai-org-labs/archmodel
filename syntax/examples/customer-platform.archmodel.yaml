@@ -1,3 +1,5 @@
+# 学習用の架空設計。検証は未実施で、すべて result: unknown。
+# フィールド・参照の見どころは Examples ページと docs/EXAMPLES.md を参照。
 version: '0.1'
 product:
   id: customer-platform
@@ -34,6 +36,14 @@ product:
             - audit-service
           verified_by:
             - failover-test
+          attribute: availability
+          owner: customer-platform-team
+          status: designed
+          description: 認証可用性の責務・条件を定義する設計サンプル。
+          extensions:
+            measurement_window: calendar-month
+            excludes:
+              - invalid_credentials
       behaviors:
         - id: login
           name: ログインする
@@ -57,6 +67,33 @@ product:
                 When 正しい認証情報でログインする
                 Then アクセストークンが返る
                 And UserAuthenticatedが発行される
+              owner: customer-platform-team
+              status: designed
+              description: 正しい認証情報でログインできるの責務・条件を定義する設計サンプル。
+              extensions:
+                test_case: AUTH-001
+                test_data: synthetic customer
+          actor:
+            - 顧客
+          preconditions:
+            - 顧客IDが発行済みである
+          side_effects:
+            - 操作履歴を非同期に保存する
+          commands:
+            - AuthenticateCustomer
+          events:
+            - CustomerAuthenticated
+          use_cases:
+            - 会員サービスへのアクセス開始
+          uses:
+            - customer-login-api
+            - customer-login-event
+            - customer-directory
+          owner: customer-platform-team
+          status: designed
+          description: ログインするの責務・条件を定義する設計サンプル。
+          extensions:
+            idempotency_key: request_id
         - id: logout
           name: ログアウトする
           trigger: 顧客がログアウトを要求する
@@ -74,6 +111,56 @@ product:
                 Given ログイン済みの顧客がいる
                 When ログアウトする
                 Then セッションが無効になる
+              owner: customer-platform-team
+              status: designed
+              description: セッションが失効するの責務・条件を定義する設計サンプル。
+          actor:
+            - 顧客
+          preconditions:
+            - 顧客IDが発行済みである
+          side_effects:
+            - 操作履歴を非同期に保存する
+          failure_behaviors:
+            - 監査キューへの保存が失敗した場合は再試行する
+          commands:
+            - RevokeSession
+          events:
+            - SessionRevoked
+          use_cases:
+            - 共有端末の利用終了
+          uses:
+            - session-revoke-message
+          owner: customer-platform-team
+          status: designed
+          description: ログアウトするの責務・条件を定義する設計サンプル。
+      guarantees:
+        - 失効したセッションから個人情報へアクセスさせない
+      constraints:
+        - 生のパスワードとトークンを永続化しない
+      qualities:
+        - auth-reliability
+        - auth-resilience
+        - auth-recoverability
+        - auth-scalability
+        - auth-operability
+        - auth-maintainability
+        - auth-compatibility
+        - auth-interoperability
+        - auth-portability
+        - auth-migration
+        - auth-deployment
+      owner: customer-platform-team
+      status: designed
+      description: 安全にログインできるの責務・条件を定義する設計サンプル。
+      extensions:
+        journey: member-sign-in
+  description: 顧客IDを基点にした会員サービスの認証・監査基盤。契約・データ・コード配置・監視までを追跡する。
+  out_of_scope:
+    - 請求決済
+    - 顧客向け通知画面
+  extensions:
+    example_focus: 全フィールドの記述と契約・証跡の対応
+  status: designed
 components:
   - id: auth-service
     name: 認証サービス
@@ -87,6 +174,24 @@ components:
       - auth-runtime
       - auth-source
       - auth-iac
+    provides:
+      - customer-login-api
+      - customer-login-event
+    consumes:
+      - customer-directory
+      - session-revoke-message
+    interfaces:
+      - HTTPS / JSON
+      - Pub/Sub command subscription
+    data:
+      - 顧客ID
+      - ハッシュ化されたセッション識別子
+      - セッション有効期限
+    owner: customer-platform-team
+    status: designed
+    description: 認証サービスの責務・条件を定義する設計サンプル。
+    extensions:
+      bounded_context: identity
   - id: audit-service
     name: 監査サービス
     kind: platform
@@ -95,6 +200,69 @@ components:
       - 認証失敗監視
     implemented_by:
       - audit-storage
+    consumes:
+      - customer-login-event
+    interfaces:
+      - 非同期イベント購読
+    data:
+      - 匿名化された操作イベント
+    owner: customer-platform-team
+    status: designed
+    description: 監査サービスの責務・条件を定義する設計サンプル。
+  - id: session-domain
+    name: セッション業務ルール
+    kind: domain
+    responsibilities:
+      - 有効期限と失効の整合性を判定する
+    interfaces:
+      - SessionPolicy.check
+    data:
+      - 失効時刻
+      - 有効期限
+    template: ddd
+    realizes:
+      - logout
+    implemented_by:
+      - session-module
+    owner: customer-platform-team
+    status: designed
+    description: セッション業務ルールの責務・条件を定義する設計サンプル。
+  - id: customer-adapter
+    name: 顧客ディレクトリアダプタ
+    kind: interface
+    responsibilities:
+      - 外部ディレクトリの応答を内部の顧客識別子へ変換する
+    interfaces:
+      - DirectoryPort
+    data:
+      - 外部IDと顧客IDの対応
+    template: vertical-slice
+    realizes:
+      - auth-availability
+    implemented_by:
+      - adapter-directory
+    consumes:
+      - customer-directory
+    owner: customer-platform-team
+    status: designed
+    description: 顧客ディレクトリアダプタの責務・条件を定義する設計サンプル。
+  - id: session-store
+    name: セッションデータ管理
+    kind: data
+    responsibilities:
+      - 失効セッションの検索とTTL削除
+    interfaces:
+      - Key-value lookup
+    data:
+      - セッションハッシュ
+      - TTL
+    realizes:
+      - logout
+    implemented_by:
+      - session-cache
+    owner: customer-platform-team
+    status: designed
+    description: セッションデータ管理の責務・条件を定義する設計サンプル。
 realizations:
   - id: auth-runtime
     name: 認証API / Cloud Run
@@ -107,19 +275,61 @@ realizations:
     observability:
       - 認証成功率メトリクス
       - エラー率アラート
+    location: asia-northeast1
+    deployment_strategy: ステージングの契約検証後に段階的に切り替える
+    owner: platform-team
+    status: designed
+    description: 認証API / Cloud Runの責務・条件を定義する設計サンプル。
+    extensions:
+      example_project: example-staging
+      region_role: primary
   - id: auth-source
     name: 認証ソースコード
     kind: source
     location: src/components/auth/
+    owner: platform-team
+    status: designed
+    description: 認証ソースコードの責務・条件を定義する設計サンプル。
   - id: auth-iac
     name: 認証インフラ定義
     kind: iac
     location: infra/auth/main.tf
+    owner: platform-team
+    status: designed
+    description: 認証インフラ定義の責務・条件を定義する設計サンプル。
   - id: audit-storage
     name: 監査ログ / BigQuery
     kind: data
     provider: gcp
     service: BigQuery
+    owner: platform-team
+    status: designed
+    description: 監査ログ / BigQueryの責務・条件を定義する設計サンプル。
+  - id: session-module
+    name: Session Policy Module
+    kind: module
+    location: src/session/domain/session-policy.ts
+    owner: platform-team
+    status: designed
+    description: Session Policy Moduleの責務・条件を定義する設計サンプル。
+  - id: adapter-directory
+    name: Directory Adapter Package
+    kind: directory
+    location: src/adapters/customer-directory/
+    owner: platform-team
+    status: designed
+    description: Directory Adapter Packageの責務・条件を定義する設計サンプル。
+  - id: session-cache
+    name: Session Cache
+    kind: resource
+    provider: gcp
+    service: Memorystore
+    location: asia-northeast1
+    public: false
+    authentication: 専用サービスアカウントと閉域接続
+    owner: platform-team
+    status: designed
+    description: Session Cacheの責務・条件を定義する設計サンプル。
 verifications:
   - id: login-contract
     name: 認証API契約テスト
@@ -127,21 +337,102 @@ verifications:
     method: 成功応答とイベント形式を確認
     location: test/auth-contract.test.ts
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 認証API契約テストの責務・条件を定義する設計サンプル。
+    evidenced_by:
+      - login-contract-report
+    extensions:
+      runner: planned CI job
+      execution_status: not_run
   - id: logout-unit
     name: セッション失効テスト
     level: unit
     method: ログアウト後のトークン無効化を確認
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: セッション失効テストの責務・条件を定義する設計サンプル。
+    location: test/planned/logout-unit.test.ts
+    evidenced_by:
+      - logout-unit-report
   - id: failover-test
     name: 障害復旧テスト
     level: resilience
     method: 障害注入時の成功率と復旧時間を測定
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 障害復旧テストの責務・条件を定義する設計サンプル。
+    location: test/planned/failover-test.test.ts
+    evidenced_by:
+      - failover-test-report
   - id: audit-test
     name: 監査ログ検証
     level: telemetry
     method: 認証イベントの監査ログ保存を確認
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 監査ログ検証の責務・条件を定義する設計サンプル。
+    location: test/planned/audit-test.test.ts
+    evidenced_by:
+      - audit-test-report
+  - id: capacity-test
+    name: 認証ピーク負荷試験
+    level: integration
+    method: stagingに500req/sを5分間送信し、成功率とp95遅延を記録する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 認証ピーク負荷試験の責務・条件を定義する設計サンプル。
+    location: test/planned/capacity-test.test.ts
+    evidenced_by:
+      - capacity-test-report
+  - id: operations-test
+    name: 認証障害の運用確認
+    level: acceptance
+    method: 相関IDからログ・トレース・復旧手順を辿れることを演習する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 認証障害の運用確認の責務・条件を定義する設計サンプル。
+    location: test/planned/operations-test.test.ts
+    evidenced_by:
+      - operations-test-report
+  - id: architecture-test
+    name: 依存境界の静的検査
+    level: unit
+    method: domainからprovider SDKへのimportがないことを検査する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 依存境界の静的検査の責務・条件を定義する設計サンプル。
+    location: test/planned/architecture-test.test.ts
+    evidenced_by:
+      - architecture-test-report
+  - id: migration-test
+    name: セッション形式移行確認
+    level: integration
+    method: 旧形式・新形式・混在データで失効判定とTTLを照合する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: セッション形式移行確認の責務・条件を定義する設計サンプル。
+    location: test/planned/migration-test.test.ts
+    evidenced_by:
+      - migration-test-report
+  - id: deployment-test
+    name: リリース後の主要導線
+    level: e2e
+    method: 段階配備後にテスト顧客でログインとログアウトを行い、ロールバック後も同じ導線を確認する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: リリース後の主要導線の責務・条件を定義する設計サンプル。
+    location: test/planned/deployment-test.test.ts
+    evidenced_by:
+      - deployment-test-report
 policies:
   - id: auth-baseline
     name: 認証監査ポリシー
@@ -155,6 +446,12 @@ policies:
       - audit-test
     rules:
       - 認証の成功と失敗を監査ログに残す
+    category: logging_standard
+    owner: customer-platform-team
+    status: designed
+    description: 認証監査ポリシーの責務・条件を定義する設計サンプル。
+    extensions:
+      review_cycle: quarterly
 decisions:
   - id: serverless-auth
     name: サーバーレス認証API
@@ -172,3 +469,324 @@ decisions:
     affects:
       - authentication
       - auth-runtime
+    owner: customer-platform-team
+    status: designed
+    description: サーバーレス認証APIの責務・条件を定義する設計サンプル。
+    extensions:
+      record: ADR-001
+      example: true
+contracts:
+  - id: customer-login-api
+    name: POST /sessions
+    kind: http
+    specification: contracts/customer-login.openapi.yaml
+    verified_by:
+      - login-contract
+    owner: customer-platform-team
+    status: designed
+    description: POST /sessionsの責務・条件を定義する設計サンプル。
+    extensions:
+      version: 1.0.0
+      compatibility: backward-compatible
+  - id: customer-login-event
+    name: CustomerAuthenticated v1
+    kind: event
+    specification: contracts/customer-events.asyncapi.yaml
+    verified_by:
+      - audit-test
+    owner: customer-platform-team
+    status: designed
+    description: CustomerAuthenticated v1の責務・条件を定義する設計サンプル。
+  - id: customer-directory
+    name: 顧客ディレクトリ境界
+    kind: external
+    specification: contracts/customer-directory.md
+    verified_by:
+      - login-contract
+    owner: customer-platform-team
+    status: designed
+    description: 顧客ディレクトリ境界の責務・条件を定義する設計サンプル。
+  - id: session-revoke-message
+    name: RevokeSession
+    kind: message
+    specification: contracts/revoke-session.schema.json
+    verified_by:
+      - logout-unit
+    owner: customer-platform-team
+    status: designed
+    description: RevokeSessionの責務・条件を定義する設計サンプル。
+qualities:
+  - id: auth-reliability
+    name: ログアウト要求は重複送信でも一度の状態遷移として扱う
+    attribute: reliability
+    requirement: ログアウト要求は重複送信でも一度の状態遷移として扱う
+    target: 100
+    unit: '%'
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - logout-unit
+    owner: customer-platform-team
+    status: designed
+    description: ログアウト要求は重複送信でも一度の状態遷移として扱うの責務・条件を定義する設計サンプル。
+  - id: auth-resilience
+    name: 監査ストレージ障害中もイベントをキューに保持する
+    attribute: resilience
+    requirement: 監査ストレージ障害中もイベントをキューに保持する
+    target: 24
+    unit: h
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - failover-test
+    owner: customer-platform-team
+    status: designed
+    description: 監査ストレージ障害中もイベントをキューに保持するの責務・条件を定義する設計サンプル。
+  - id: auth-recoverability
+    name: 日次バックアップから監査イベントを復元する
+    attribute: recoverability
+    requirement: 日次バックアップから監査イベントを復元する
+    target: 30
+    unit: min
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - failover-test
+    owner: customer-platform-team
+    status: designed
+    description: 日次バックアップから監査イベントを復元するの責務・条件を定義する設計サンプル。
+  - id: auth-scalability
+    name: 5分間のピーク流量でも認証処理を継続する
+    attribute: scalability
+    requirement: 5分間のピーク流量でも認証処理を継続する
+    target: 500
+    unit: requests/s
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - capacity-test
+    owner: customer-platform-team
+    status: designed
+    description: 5分間のピーク流量でも認証処理を継続するの責務・条件を定義する設計サンプル。
+  - id: auth-operability
+    name: 当番担当者が手順書に従って失敗要求を特定できる
+    attribute: operability
+    requirement: 当番担当者が手順書に従って失敗要求を特定できる
+    target: 10
+    unit: min
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - operations-test
+    owner: customer-platform-team
+    status: designed
+    description: 当番担当者が手順書に従って失敗要求を特定できるの責務・条件を定義する設計サンプル。
+  - id: auth-maintainability
+    name: 外部顧客ディレクトリ変更をアダプタ内に閉じ込める
+    attribute: maintainability
+    requirement: 外部顧客ディレクトリ変更をアダプタ内に閉じ込める
+    target: 1
+    unit: package
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - architecture-test
+    owner: customer-platform-team
+    status: designed
+    description: 外部顧客ディレクトリ変更をアダプタ内に閉じ込めるの責務・条件を定義する設計サンプル。
+  - id: auth-compatibility
+    name: 公開中のAPI v1契約を維持する
+    attribute: compatibility
+    requirement: 公開中のAPI v1契約を維持する
+    target: 100
+    unit: '% of contract cases'
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - login-contract
+    owner: customer-platform-team
+    status: designed
+    description: 公開中のAPI v1契約を維持するの責務・条件を定義する設計サンプル。
+  - id: auth-interoperability
+    name: OIDCクレームとイベントのタイムスタンプ形式を統一する
+    attribute: interoperability
+    requirement: OIDCクレームとイベントのタイムスタンプ形式を統一する
+    target: RFC3339 / UTC
+    unit: format
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - login-contract
+    owner: customer-platform-team
+    status: designed
+    description: OIDCクレームとイベントのタイムスタンプ形式を統一するの責務・条件を定義する設計サンプル。
+  - id: auth-portability
+    name: 顧客識別とセッション業務ルールを特定クラウドから独立させる
+    attribute: portability
+    requirement: 顧客識別とセッション業務ルールを特定クラウドから独立させる
+    target: 0
+    unit: provider imports in domain
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - architecture-test
+    owner: customer-platform-team
+    status: designed
+    description: 顧客識別とセッション業務ルールを特定クラウドから独立させるの責務・条件を定義する設計サンプル。
+  - id: auth-migration
+    name: セッションデータの移行時に旧新形式を読み取れる
+    attribute: migration
+    requirement: セッションデータの移行時に旧新形式を読み取れる
+    target: 7
+    unit: days
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - migration-test
+    owner: customer-platform-team
+    status: designed
+    description: セッションデータの移行時に旧新形式を読み取れるの責務・条件を定義する設計サンプル。
+  - id: auth-deployment
+    name: 問題のあるリビジョンを旧版へ戻せる
+    attribute: deployment
+    requirement: 問題のあるリビジョンを旧版へ戻せる
+    target: 5
+    unit: min
+    level: standard
+    risk: normal
+    realized_by:
+      - auth-service
+    verified_by:
+      - deployment-test
+    owner: customer-platform-team
+    status: designed
+    description: 問題のあるリビジョンを旧版へ戻せるの責務・条件を定義する設計サンプル。
+relations:
+  - id: customer-auth-read
+    from: auth-service
+    to: session-store
+    type: reads
+    protocol: internal query
+    label: reads
+    description: auth-serviceからsession-storeへのreads接続。
+  - id: customer-auth-write
+    from: auth-service
+    to: session-store
+    type: writes
+    protocol: internal command
+    contract: session-revoke-message
+    label: writes
+    description: auth-serviceからsession-storeへのwrites接続。
+  - id: customer-audit-dependency
+    from: auth-service
+    to: audit-service
+    type: depends_on
+    protocol: event
+    contract: customer-login-event
+    label: depends_on
+    description: auth-serviceからaudit-serviceへのdepends_on接続。
+extensions:
+  example: true
+  verification_note: 説明用の架空設計。パス・日時は記述例であり、実環境や検証結果を示すものではない。
+evidence:
+  - id: login-contract-report
+    name: 認証API契約テストの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/login-contract/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: logout-unit-report
+    name: セッション失効テストの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/logout-unit/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: failover-test-report
+    name: 障害復旧テストの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/failover-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: audit-test-report
+    name: 監査ログ検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/audit-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: capacity-test-report
+    name: 認証ピーク負荷試験の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/capacity-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: operations-test-report
+    name: 認証障害の運用確認の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/operations-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: architecture-test-report
+    name: 依存境界の静的検査の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/architecture-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: migration-test-report
+    name: セッション形式移行確認の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/migration-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: deployment-test-report
+    name: リリース後の主要導線の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/deployment-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned

@@ -1,8 +1,828 @@
+# 学習用の架空設計。検証は未実施で、すべて result: unknown。
+# フィールド・参照の見どころは Examples ページと docs/EXAMPLES.md を参照。
 version: '0.1'
+extensions:
+  example: true
+  verification_note: 説明用の架空設計。パス・日時は記述例であり、実環境や検証結果を示すものではない。
+  example_focus: 既存API・ネットワーク・センサーから責務と価値を逆引きする
 realizations:
   - id: existing-api
-    name: 既存のCloud Run API
+    name: 既存の設備監視API / Cloud Run
     kind: runtime
     provider: gcp
     service: Cloud Run
+    location: asia-northeast1
+    environment: staging
     public: true
+    authentication: 端末はmTLS、保守担当者はOIDC
+    deployment_strategy: 既存APIと新リビジョンを並行稼働し、計測イベントの取りこぼしを照合して切り替える
+    observability:
+      - 受信イベント数と欠番
+      - 通知遅延p95
+      - デッドレター件数
+    owner: platform-team
+    status: designed
+    description: 既存の設備監視API / Cloud Runの責務・条件を定義する設計サンプル。
+  - id: telemetry-network
+    name: 設備向け閉域入口
+    kind: network
+    provider: gcp
+    service: VPC / Load Balancer
+    location: asia-northeast1
+    public: false
+    authentication: 拠点証明書と送信元制限
+    owner: platform-team
+    status: designed
+    description: 設備向け閉域入口の責務・条件を定義する設計サンプル。
+  - id: telemetry-database
+    name: 計測値ストア
+    kind: data
+    provider: gcp
+    service: Cloud SQL
+    public: false
+    authentication: ワークロードIDとDB権限
+    owner: platform-team
+    status: designed
+    description: 計測値ストアの責務・条件を定義する設計サンプル。
+  - id: telemetry-topic
+    name: 計測イベント配送
+    kind: resource
+    provider: gcp
+    service: Pub/Sub
+    owner: platform-team
+    status: designed
+    description: 計測イベント配送の責務・条件を定義する設計サンプル。
+  - id: telemetry-source
+    name: 受信処理ソース
+    kind: source
+    location: src/telemetry/ingest.ts
+    owner: platform-team
+    status: designed
+    description: 受信処理ソースの責務・条件を定義する設計サンプル。
+  - id: telemetry-module
+    name: 閾値判定モジュール
+    kind: module
+    location: src/telemetry/domain/threshold.ts
+    owner: platform-team
+    status: designed
+    description: 閾値判定モジュールの責務・条件を定義する設計サンプル。
+  - id: telemetry-directory
+    name: 再処理アダプタ
+    kind: directory
+    location: src/telemetry/adapters/
+    owner: platform-team
+    status: designed
+    description: 再処理アダプタの責務・条件を定義する設計サンプル。
+  - id: telemetry-iac
+    name: 設備監視のIaC
+    kind: iac
+    location: infra/telemetry/main.tf
+    owner: platform-team
+    status: designed
+    description: 設備監視のIaCの責務・条件を定義する設計サンプル。
+  - id: telemetry-deployment
+    name: 設備監視の配備定義
+    kind: deployment
+    location: deploy/telemetry/staging.yaml
+    environment: staging
+    owner: platform-team
+    status: designed
+    description: 設備監視の配備定義の責務・条件を定義する設計サンプル。
+products:
+  - id: facility-monitoring
+    name: 設備監視プラットフォーム
+    purpose: 設備の異常を保守担当者へ伝え、計測欠損と見落としを減らす
+    primary_users:
+      - 設備保守担当者
+      - 拠点管理者
+    user_value: 異常の根拠と時系列を確認して対応を判断できる
+    scope:
+      - センサー計測値の受信
+      - 異常判定と通知
+      - 日次集計・欠損再処理
+    out_of_scope:
+      - 設備の自動停止制御
+      - 安全装置そのものの代替
+    has:
+      - telemetry-ingestion
+      - incident-response
+      - daily-reconciliation
+    owner: customer-platform-team
+    status: designed
+    description: 設備監視プラットフォームの責務・条件を定義する設計サンプル。
+capabilities:
+  - id: telemetry-ingestion
+    name: 計測を取り込む
+    purpose: 認証済み設備の計測値を重複なく記録する
+    actor:
+      - 設備保守担当者
+    inputs:
+      - 計測イベント
+    outputs:
+      - 保存済み受信ID
+    guarantees:
+      - 設備IDと連番で重複を排除する
+    constraints:
+      - 計測値の保持は90日、通知履歴は1年
+    behaviors:
+      - ingest-reading
+    qualities:
+      - telemetry-security
+      - telemetry-performance
+      - telemetry-observability
+    owner: customer-platform-team
+    status: designed
+    description: 計測を取り込むの責務・条件を定義する設計サンプル。
+  - id: incident-response
+    name: 異常に対応する
+    purpose: 計測値の閾値超過を根拠とともに保守担当へ通知する
+    actor:
+      - 設備保守担当者
+    inputs:
+      - ReadingReceived
+    outputs:
+      - 異常通知と確認状態
+    guarantees:
+      - 設備IDと連番で重複を排除する
+    constraints:
+      - 計測値の保持は90日、通知履歴は1年
+    behaviors:
+      - evaluate-reading
+    qualities:
+      - telemetry-safety
+    owner: customer-platform-team
+    status: designed
+    description: 異常に対応するの責務・条件を定義する設計サンプル。
+  - id: daily-reconciliation
+    name: 日次で欠損を照合する
+    purpose: 連番の欠損と集計差分を検出して再処理する
+    actor:
+      - 設備保守担当者
+    inputs:
+      - 前日の受信ログ
+    outputs:
+      - 欠損一覧と再処理結果
+    guarantees:
+      - 設備IDと連番で重複を排除する
+    constraints:
+      - 計測値の保持は90日、通知履歴は1年
+    behaviors:
+      - reconcile-day
+    qualities:
+      - telemetry-audit
+    owner: customer-platform-team
+    status: designed
+    description: 日次で欠損を照合するの責務・条件を定義する設計サンプル。
+behaviors:
+  - id: ingest-reading
+    name: 計測値を受信する
+    actor:
+      - 登録済み設備
+    trigger: 設備から計測要求を受け取る
+    preconditions:
+      - 設備IDと拠点が登録されている
+    outcomes:
+      - 計測値を永続化する
+      - ReadingReceivedイベントを発行する
+    failure_behaviors:
+      - 失敗対象と相関IDを記録して再試行する
+    side_effects:
+      - 計測・操作の監査履歴を追記する
+    commands:
+      - ingest-reading
+    events:
+      - ReadingReceived
+    use_cases:
+      - 認証済み設備の計測値を重複なく記録する
+    realized_by:
+      - ingest-component
+    scenarios:
+      - sensor-sample
+      - reading-example
+      - reading-timing
+    uses:
+      - reading-http
+    owner: customer-platform-team
+    status: designed
+    description: 計測値を受信するの責務・条件を定義する設計サンプル。
+  - id: evaluate-reading
+    name: 異常を判定して通知する
+    actor:
+      - 運用スケジューラ
+    trigger: 計測イベントが配送される
+    preconditions:
+      - 設備IDと拠点が登録されている
+    outcomes:
+      - 閾値と継続時間を判定する
+      - 通知の重複を抑止する
+    failure_behaviors:
+      - 失敗対象と相関IDを記録して再試行する
+    side_effects:
+      - 計測・操作の監査履歴を追記する
+    commands:
+      - evaluate-reading
+    events:
+      - ProcessingCompleted
+    use_cases:
+      - 計測値の閾値超過を根拠とともに保守担当へ通知する
+    realized_by:
+      - threshold-component
+    scenarios:
+      - incident-event
+      - incident-state
+      - incident-text
+    uses:
+      - reading-event
+      - incident-message
+    owner: customer-platform-team
+    status: designed
+    description: 異常を判定して通知するの責務・条件を定義する設計サンプル。
+  - id: reconcile-day
+    name: 日次照合を実行する
+    actor:
+      - 運用スケジューラ
+    trigger: 毎日02:00 JSTのスケジュール
+    preconditions:
+      - 設備IDと拠点が登録されている
+    outcomes:
+      - 設備ごとの連番と件数を照合する
+      - 再処理対象を記録する
+    failure_behaviors:
+      - 失敗対象と相関IDを記録して再試行する
+    side_effects:
+      - 計測・操作の監査履歴を追記する
+    commands:
+      - reconcile-day
+    events:
+      - ProcessingCompleted
+    use_cases:
+      - 連番の欠損と集計差分を検出して再処理する
+    realized_by:
+      - reconciliation-component
+    scenarios:
+      - daily-batch
+      - daily-gherkin
+    uses:
+      - device-registry
+    owner: customer-platform-team
+    status: designed
+    description: 日次照合を実行するの責務・条件を定義する設計サンプル。
+scenarios:
+  - id: sensor-sample
+    name: センサー計測の受信
+    type: iot
+    specification: |-
+      デバイス: pump-001
+      観測条件: 温度80度、連番42
+      送信データ: device_id, sequence, observed_at, temperature
+      期待する動作: 端末証明書を確認し、受信IDを返す
+      通信断時: 端末が保持し、同じ連番で再送する
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: センサー計測の受信の責務・条件を定義する設計サンプル。
+  - id: reading-example
+    name: 受信データの具体例
+    type: example
+    specification: |-
+      入力: {device_id: pump-001, sequence: 42, temperature: 80}
+      期待結果: {accepted: true, duplicate: false}
+      同じ入力の再送: {accepted: true, duplicate: true}
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 受信データの具体例の責務・条件を定義する設計サンプル。
+  - id: reading-timing
+    name: 受信応答の期限
+    type: timing
+    specification: |-
+      起点: 受信入口で要求を受理（t=0）
+      期限: p95で500ms以内
+      期待する動作: 永続化済みの受信IDを返す
+      タイムアウト時: 端末は同一連番で再送し重複を抑止する
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 受信応答の期限の責務・条件を定義する設計サンプル。
+  - id: incident-event
+    name: 異常イベントの配送
+    type: async_event
+    specification: |-
+      発生イベント: ReadingReceived
+      発行元: 受信API
+      購読先: 閾値判定
+      期待結果: IncidentOpenedを通知する
+      重複・順序逆転時: 設備IDと連番で判定し古い値で状態を戻さない
+      失敗時: 指数バックオフ後にデッドレターへ移す
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 異常イベントの配送の責務・条件を定義する設計サンプル。
+  - id: incident-state
+    name: 異常確認の状態遷移
+    type: state_transition
+    specification: |-
+      初期状態: 未確認
+      イベント: 担当者による確認
+      条件: 対象拠点の対応権限がある
+      遷移先: 対応中
+      遷移時の処理: 担当者IDと時刻を記録する
+      期待結果: 重複した確認要求でも一つの履歴を残す
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 異常確認の状態遷移の責務・条件を定義する設計サンプル。
+  - id: incident-text
+    name: 人が判断する境界
+    type: text
+    specification: |-
+      このシステムの通知は設備停止を自動実行しない。
+      保守担当者が現場の安全手順と計測根拠を確認して対応を決める。
+      古い計測値や欠損は「正常」と表示せず、要確認として示す。
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 人が判断する境界の責務・条件を定義する設計サンプル。
+  - id: daily-batch
+    name: 前日分の再処理
+    type: batch
+    specification: |-
+      実行契機: 毎日02:00 JST
+      対象データ: 前日分の受信イベント
+      処理手順: 連番の欠損検出、再取得依頼、件数照合
+      期待結果: 同じ対象日の再実行で件数が増えない
+      失敗時・再実行: 最後の確定済みチェックポイントから再開する
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 前日分の再処理の責務・条件を定義する設計サンプル。
+  - id: daily-gherkin
+    name: 再実行で二重計上しない
+    type: gherkin
+    specification: |-
+      Given 前日分の集計が完了している
+      When 同じ対象日の日次照合を再実行する
+      Then 集計件数と計測値は変わらない
+      And 再実行した事実だけが監査履歴に残る
+    verified_by:
+      - telemetry-acceptance
+    owner: customer-platform-team
+    status: designed
+    description: 再実行で二重計上しないの責務・条件を定義する設計サンプル。
+qualities:
+  - id: telemetry-safety
+    name: 古い値・欠損を正常として扱わず、人の安全判断へ引き継ぐ
+    attribute: safety
+    requirement: 古い値・欠損を正常として扱わず、人の安全判断へ引き継ぐ
+    target: 100
+    unit: '% of stale readings'
+    level: standard
+    risk: normal
+    realized_by:
+      - threshold-component
+    verified_by:
+      - telemetry-safety-test
+    owner: customer-platform-team
+    status: designed
+    description: 古い値・欠損を正常として扱わず、人の安全判断へ引き継ぐの責務・条件を定義する設計サンプル。
+  - id: telemetry-security
+    name: 未登録または失効した端末証明書を受理しない
+    attribute: security
+    requirement: 未登録または失効した端末証明書を受理しない
+    target: 100
+    unit: '% of rejected invalid certificates'
+    level: standard
+    risk: normal
+    realized_by:
+      - ingest-component
+    verified_by:
+      - telemetry-policy
+    owner: customer-platform-team
+    status: designed
+    description: 未登録または失効した端末証明書を受理しないの責務・条件を定義する設計サンプル。
+  - id: telemetry-performance
+    name: 登録済み端末の受信要求へp95で応答する
+    attribute: performance
+    requirement: 登録済み端末の受信要求へp95で応答する
+    target: 500
+    unit: ms
+    level: standard
+    risk: normal
+    realized_by:
+      - ingest-component
+    verified_by:
+      - telemetry-load
+    owner: customer-platform-team
+    status: designed
+    description: 登録済み端末の受信要求へp95で応答するの責務・条件を定義する設計サンプル。
+  - id: telemetry-observability
+    name: 欠番・滞留・通知失敗を担当チームが確認できる
+    attribute: observability
+    requirement: 欠番・滞留・通知失敗を担当チームが確認できる
+    target: 5
+    unit: min
+    level: standard
+    risk: normal
+    realized_by:
+      - telemetry-platform
+    verified_by:
+      - telemetry-monitor
+    owner: customer-platform-team
+    status: designed
+    description: 欠番・滞留・通知失敗を担当チームが確認できるの責務・条件を定義する設計サンプル。
+  - id: telemetry-audit
+    name: 再処理の対象日と実施者を追跡できる
+    attribute: audit
+    requirement: 再処理の対象日と実施者を追跡できる
+    target: 365
+    unit: days
+    level: standard
+    risk: normal
+    realized_by:
+      - reconciliation-component
+    verified_by:
+      - telemetry-monitor
+    owner: customer-platform-team
+    status: designed
+    description: 再処理の対象日と実施者を追跡できるの責務・条件を定義する設計サンプル。
+components:
+  - id: ingest-component
+    name: 計測受信アダプタ
+    kind: interface
+    responsibilities:
+      - 端末認証
+      - 入力契約の検証
+      - 連番による重複排除
+    interfaces:
+      - POST /readings
+    data:
+      - 設備ID
+      - 連番
+      - 計測値
+    implemented_by:
+      - existing-api
+      - telemetry-source
+      - telemetry-network
+    provides:
+      - reading-http
+      - reading-event
+    owner: customer-platform-team
+    status: designed
+    description: 計測受信アダプタの責務・条件を定義する設計サンプル。
+  - id: threshold-component
+    name: 異常判定
+    kind: domain
+    responsibilities:
+      - 継続時間と閾値の判定
+      - 確認状態の遷移
+    template: ddd
+    implemented_by:
+      - telemetry-module
+    consumes:
+      - reading-event
+    provides:
+      - incident-message
+    owner: customer-platform-team
+    status: designed
+    description: 異常判定の責務・条件を定義する設計サンプル。
+  - id: reconciliation-component
+    name: 日次照合
+    kind: application
+    responsibilities:
+      - 欠番検出
+      - 再処理のチェックポイント管理
+    template: hexagonal
+    implemented_by:
+      - telemetry-directory
+      - telemetry-deployment
+    consumes:
+      - device-registry
+    owner: customer-platform-team
+    status: designed
+    description: 日次照合の責務・条件を定義する設計サンプル。
+  - id: telemetry-store
+    name: 計測リポジトリ
+    kind: data
+    responsibilities:
+      - 計測値と連番の永続化
+      - 保持期限による削除
+    realizes:
+      - ingest-reading
+      - reconcile-day
+    implemented_by:
+      - telemetry-database
+    owner: customer-platform-team
+    status: designed
+    description: 計測リポジトリの責務・条件を定義する設計サンプル。
+  - id: telemetry-platform
+    name: 配送と監視基盤
+    kind: platform
+    responsibilities:
+      - イベント配送
+      - 滞留監視
+      - 構成の再現
+    realizes:
+      - evaluate-reading
+    implemented_by:
+      - telemetry-topic
+      - telemetry-iac
+    consumes:
+      - reading-event
+    owner: customer-platform-team
+    status: designed
+    description: 配送と監視基盤の責務・条件を定義する設計サンプル。
+policies:
+  - id: telemetry-retention
+    name: 計測値の保存と削除
+    category: data_protection
+    rules:
+      - 生の計測値は90日後に削除する
+      - 監査履歴は1年保持しアクセスを記録する
+    applies_to:
+      - facility-monitoring
+      - telemetry-store
+    realized_by:
+      - telemetry-store
+    verified_by:
+      - telemetry-policy
+    owner: customer-platform-team
+    status: designed
+    description: 計測値の保存と削除の責務・条件を定義する設計サンプル。
+decisions:
+  - id: keep-existing-api
+    name: 既存APIを境界として残す
+    category: runtime
+    context: 登録済み端末の接続先を一度に変更できない
+    decision: 既存APIを維持し、閾値判定と日次照合を外へ分離する
+    alternatives:
+      - 全端末のURLを切り替えて刷新
+      - 既存API内へ全処理を集約
+    reason: 端末との互換性を保ちながら責務を段階的に移せる
+    trade_off:
+      - 移行期間中は旧新経路の照合が必要
+    decision_status: accepted
+    affects:
+      - existing-api
+      - telemetry-ingestion
+      - threshold-component
+    owner: customer-platform-team
+    status: designed
+    description: 既存APIを境界として残すの責務・条件を定義する設計サンプル。
+contracts:
+  - id: reading-http
+    name: POST /readings v1
+    kind: http
+    specification: contracts/readings.openapi.yaml
+    verified_by:
+      - telemetry-contract
+    owner: customer-platform-team
+    status: designed
+    description: POST /readings v1の責務・条件を定義する設計サンプル。
+  - id: reading-event
+    name: ReadingReceived v1
+    kind: event
+    specification: contracts/readings.asyncapi.yaml
+    verified_by:
+      - telemetry-contract
+    owner: customer-platform-team
+    status: designed
+    description: ReadingReceived v1の責務・条件を定義する設計サンプル。
+  - id: incident-message
+    name: IncidentNotification
+    kind: message
+    specification: contracts/incident.schema.json
+    verified_by:
+      - telemetry-contract
+    owner: customer-platform-team
+    status: designed
+    description: IncidentNotificationの責務・条件を定義する設計サンプル。
+  - id: device-registry
+    name: 設備台帳の外部契約
+    kind: external
+    specification: contracts/device-registry.md
+    verified_by:
+      - telemetry-contract
+    owner: customer-platform-team
+    status: designed
+    description: 設備台帳の外部契約の責務・条件を定義する設計サンプル。
+verifications:
+  - id: telemetry-acceptance
+    name: 設備監視の代表シナリオ
+    level: acceptance
+    method: 8種類の仕様形式について入出力・状態・例外を手動と自動テストで確認する
+    result: unknown
+    evidenced_by:
+      - illustrative-report-metadata
+    owner: quality-engineering
+    status: designed
+    description: 設備監視の代表シナリオの責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-acceptance.test.ts
+  - id: telemetry-contract
+    name: 設備I/F契約の検証
+    level: contract
+    method: 要求・応答・イベント・通知を契約ファイルと照合する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 設備I/F契約の検証の責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-contract.test.ts
+    evidenced_by:
+      - telemetry-contract-report
+  - id: telemetry-safety-test
+    name: 欠損時の表示境界確認
+    level: acceptance
+    method: 計測欠損・期限超過を注入し正常表示や自動停止にならないことを確認する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 欠損時の表示境界確認の責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-safety-test.test.ts
+    evidenced_by:
+      - telemetry-safety-test-report
+  - id: telemetry-policy
+    name: 端末認証と保持ルール検証
+    level: policy
+    method: 失効証明書の拒否と90日境界の削除処理を確認する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 端末認証と保持ルール検証の責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-policy.test.ts
+    evidenced_by:
+      - telemetry-policy-report
+  - id: telemetry-load
+    name: 受信負荷試験
+    level: integration
+    method: 100台分の端末イベントを送信してp95の応答時間を測る
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 受信負荷試験の責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-load.test.ts
+    evidenced_by:
+      - telemetry-load-report
+  - id: telemetry-monitor
+    name: 監視と監査の運用検証
+    level: telemetry
+    method: 欠番・再試行・再処理のイベントがメトリクスとログへ出ることを確認する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 監視と監査の運用検証の責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-monitor.test.ts
+    evidenced_by:
+      - telemetry-monitor-report
+  - id: telemetry-iac-check
+    name: 閉域・権限設定の検証
+    level: iac
+    method: IaC planで外部公開範囲、DB権限、保持設定を確認する
+    result: unknown
+    verifies:
+      - telemetry-iac
+      - telemetry-network
+    owner: quality-engineering
+    status: designed
+    description: 閉域・権限設定の検証の責務・条件を定義する設計サンプル。
+    location: test/planned/telemetry-iac-check.test.ts
+    evidenced_by:
+      - telemetry-iac-check-report
+evidence:
+  - id: illustrative-report-metadata
+    name: 収集日時フィールドの記述例
+    description: 架空のレポートメタデータ。collected_atは記法を示す例示日時であり、実際の検証実施を意味しない。
+    location: examples/illustrative/report-metadata.json
+    collected_at: '2026-01-01T00:00:00Z'
+    result: unknown
+    extensions:
+      synthetic: true
+    owner: quality-engineering
+    status: designed
+  - id: telemetry-contract-report
+    name: 設備I/F契約の検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/telemetry-contract/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: telemetry-safety-test-report
+    name: 欠損時の表示境界確認の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/telemetry-safety-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: telemetry-policy-report
+    name: 端末認証と保持ルール検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/telemetry-policy/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: telemetry-load-report
+    name: 受信負荷試験の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/telemetry-load/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: telemetry-monitor-report
+    name: 監視と監査の運用検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/telemetry-monitor/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: telemetry-iac-check-report
+    name: 閉域・権限設定の検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/telemetry-iac-check/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+relations:
+  - id: ingest-route
+    from: telemetry-network
+    to: existing-api
+    type: routes_to
+    protocol: https
+    contract: reading-http
+    label: routes_to
+    description: telemetry-networkがexisting-apiとhttpsで連携する
+    extensions:
+      design_only: true
+  - id: ingest-publish
+    from: ingest-component
+    to: telemetry-topic
+    type: publishes
+    protocol: pubsub
+    contract: reading-event
+    label: publishes
+    description: ingest-componentがtelemetry-topicとpubsubで連携する
+    extensions:
+      design_only: true
+  - id: threshold-subscribe
+    from: threshold-component
+    to: telemetry-topic
+    type: subscribes
+    protocol: pubsub
+    contract: reading-event
+    label: subscribes
+    description: threshold-componentがtelemetry-topicとpubsubで連携する
+    extensions:
+      design_only: true
+  - id: ingest-write
+    from: ingest-component
+    to: telemetry-store
+    type: writes
+    protocol: repository
+    label: writes
+    description: ingest-componentがtelemetry-storeとrepositoryで連携する
+    extensions:
+      design_only: true
+  - id: reconcile-read
+    from: reconciliation-component
+    to: telemetry-store
+    type: reads
+    protocol: repository
+    label: reads
+    description: reconciliation-componentがtelemetry-storeとrepositoryで連携する
+    extensions:
+      design_only: true
+  - id: reconcile-call
+    from: reconciliation-component
+    to: existing-api
+    type: calls
+    protocol: https
+    contract: reading-http
+    label: calls
+    description: reconciliation-componentがexisting-apiとhttpsで連携する
+    extensions:
+      design_only: true
+  - id: threshold-dependency
+    from: threshold-component
+    to: telemetry-platform
+    type: depends_on
+    protocol: event delivery
+    label: depends_on
+    description: threshold-componentがtelemetry-platformとevent deliveryで連携する
+    extensions:
+      design_only: true

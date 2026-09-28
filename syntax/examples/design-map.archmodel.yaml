@@ -1,3 +1,5 @@
+# 学習用の架空設計。検証は未実施で、すべて result: unknown。
+# フィールド・参照の見どころは Examples ページと docs/EXAMPLES.md を参照。
 version: '0.1'
 product:
   id: customer-platform
@@ -34,6 +36,15 @@ product:
             - audit-service
           verified_by:
             - failover-test
+          sli: 正常な認証要求のうち2秒以内に有効な応答を返した割合（暦月、4xxを除外）
+          rto: 15m
+          rpo: 0m
+          evidenced_by:
+            - failover-test-report
+          attribute: availability
+          owner: customer-platform-team
+          status: designed
+          description: 認証可用性の責務・条件を定義する設計サンプル。
         security:
           id: auth-security
           name: 認証情報の保護
@@ -43,6 +54,10 @@ product:
             - auth-service
           verified_by:
             - login-contract
+          attribute: security
+          owner: customer-platform-team
+          status: designed
+          description: 認証情報の保護の責務・条件を定義する設計サンプル。
         observability:
           id: auth-observability
           name: 認証イベントの監視
@@ -51,6 +66,10 @@ product:
             - audit-service
           verified_by:
             - audit-test
+          attribute: observability
+          owner: customer-platform-team
+          status: designed
+          description: 認証イベントの監視の責務・条件を定義する設計サンプル。
       behaviors:
         - id: login
           name: ログインする
@@ -74,6 +93,9 @@ product:
                 When 正しい認証情報でログインする
                 Then アクセストークンが返る
                 And UserAuthenticatedが発行される
+              owner: customer-platform-team
+              status: designed
+              description: 正しい認証情報でログインできるの責務・条件を定義する設計サンプル。
             - id: login-rejected
               name: 不正な認証情報を拒否
               verified_by:
@@ -83,6 +105,9 @@ product:
                 Given 登録済みの顧客
                 When 誤ったパスワードを送信
                 Then トークンを発行しない
+              owner: customer-platform-team
+              status: designed
+              description: 不正な認証情報を拒否の責務・条件を定義する設計サンプル。
           commands:
             - Login
           events:
@@ -92,6 +117,16 @@ product:
           uses:
             - login-api
             - user-authenticated
+          actor:
+            - 顧客
+          preconditions:
+            - アカウントが有効である
+            - 認証基盤が要求を受理できる
+          side_effects:
+            - 相関ID付きの操作ログを記録する
+          owner: customer-platform-team
+          status: designed
+          description: ログインするの責務・条件を定義する設計サンプル。
         - id: logout
           name: ログアウトする
           trigger: 顧客がログアウトを要求する
@@ -109,6 +144,9 @@ product:
                 Given ログイン済みの顧客がいる
                 When ログアウトする
                 Then セッションが無効になる
+              owner: customer-platform-team
+              status: designed
+              description: セッションが失効するの責務・条件を定義する設計サンプル。
             - id: logout-repeat
               name: 再度のログアウトは安全
               verified_by:
@@ -118,16 +156,33 @@ product:
                 Given 失効済みのセッション
                 When 再度ログアウト
                 Then 状態を変更せず成功を返す
+              owner: customer-platform-team
+              status: designed
+              description: 再度のログアウトは安全の責務・条件を定義する設計サンプル。
           commands:
             - Logout
           events:
             - SessionRevoked
           use_cases:
             - セッション終了
+          actor:
+            - 顧客
+          preconditions:
+            - 要求に紐付くセッションの署名を検証できる
+          side_effects:
+            - 相関ID付きの操作ログを記録する
+          failure_behaviors:
+            - 認可違反は403、入力不正は422として返す
+          owner: customer-platform-team
+          status: designed
+          description: ログアウトするの責務・条件を定義する設計サンプル。
       guarantees:
         - 本人のみアクセス可能
       constraints:
         - 個人情報をログに残さない
+      description: 本人確認とセッションのライフサイクルを管理する。
+      owner: customer-platform-team
+      status: designed
     - id: profile-management
       name: Profile Management
       purpose: 顧客が自身の情報を管理できる
@@ -152,6 +207,12 @@ product:
             - profile-service
           verified_by:
             - profile-test
+          sli: stagingで同時利用者200人、30分間のGET /me計測値の95パーセンタイル
+          risk: normal
+          attribute: performance
+          owner: customer-platform-team
+          status: designed
+          description: プロフィール応答時間の責務・条件を定義する設計サンプル。
         audit:
           id: profile-audit
           name: 変更証跡
@@ -160,6 +221,10 @@ product:
             - audit-service
           verified_by:
             - audit-test
+          attribute: audit
+          owner: customer-platform-team
+          status: designed
+          description: 変更証跡の責務・条件を定義する設計サンプル。
       behaviors:
         - id: view-profile
           name: プロフィールを参照する
@@ -183,6 +248,9 @@ product:
                 Given 認証済みの顧客
                 When プロフィールを参照
                 Then 登録情報を返す
+              owner: customer-platform-team
+              status: designed
+              description: 登録情報を表示できるの責務・条件を定義する設計サンプル。
             - id: profile-forbidden
               name: 他人の情報は参照できない
               verified_by:
@@ -192,8 +260,22 @@ product:
                 Given 別の顧客のID
                 When プロフィールを参照
                 Then アクセスを拒否
+              owner: customer-platform-team
+              status: designed
+              description: 他人の情報は参照できないの責務・条件を定義する設計サンプル。
           use_cases:
             - 本人情報の参照
+          actor:
+            - 顧客
+          preconditions:
+            - 要求に紐付くセッションの署名を検証できる
+          side_effects:
+            - 相関ID付きの操作ログを記録する
+          failure_behaviors:
+            - 認可違反は403、入力不正は422として返す
+          owner: customer-platform-team
+          status: designed
+          description: プロフィールを参照するの責務・条件を定義する設計サンプル。
         - id: update-profile
           name: プロフィールを更新する
           trigger: 顧客が変更内容を保存
@@ -216,6 +298,9 @@ product:
                 Given 有効な変更内容
                 When 保存を実行
                 Then 更新結果と履歴を記録
+              owner: customer-platform-team
+              status: designed
+              description: 変更内容を保存できるの責務・条件を定義する設計サンプル。
             - id: profile-invalid
               name: 不正な入力を拒否
               verified_by:
@@ -225,10 +310,37 @@ product:
                 Given 不正なメールアドレス
                 When 保存を実行
                 Then 元の情報を維持
+              owner: customer-platform-team
+              status: designed
+              description: 不正な入力を拒否の責務・条件を定義する設計サンプル。
           use_cases:
             - 本人情報の編集
+          actor:
+            - 顧客
+          preconditions:
+            - 要求に紐付くセッションの署名を検証できる
+          side_effects:
+            - 相関ID付きの操作ログを記録する
+          failure_behaviors:
+            - 認可違反は403、入力不正は422として返す
+          owner: customer-platform-team
+          status: designed
+          description: プロフィールを更新するの責務・条件を定義する設計サンプル。
+      description: 本人の閲覧・更新を許可し、変更履歴から追跡できるようにする。
+      qualities:
+        - profile-privacy
+        - profile-usability
+        - profile-accessibility
+        - profile-testability
+      owner: customer-platform-team
+      status: designed
   out_of_scope:
     - 決済・請求
+  description: 一般顧客の認証とプロフィール管理。認証・顧客情報・監査を分離し、API契約と運用上の保証をつなぐ。
+  extensions:
+    business_owner: customer-experience
+    data_classification: personal
+  status: designed
 components:
   - id: auth-service
     name: Auth Service
@@ -248,6 +360,14 @@ components:
       - user-authenticated
     consumes:
       - identity-api
+    data:
+      - 顧客ID
+      - セッションIDまたはプロフィールの版番号
+    interfaces:
+      - HTTPS / JSON
+    owner: customer-platform-team
+    status: designed
+    description: Auth Serviceの責務・条件を定義する設計サンプル。
   - id: audit-service
     name: Audit Service
     kind: platform
@@ -259,6 +379,16 @@ components:
       - audit-topic
     consumes:
       - user-authenticated
+    data:
+      - 主体IDのハッシュ
+      - イベント種別
+      - 相関ID
+      - 発生日時
+    interfaces:
+      - HTTPS / JSON
+    owner: customer-platform-team
+    status: designed
+    description: Audit Serviceの責務・条件を定義する設計サンプル。
   - id: profile-service
     name: Profile Service
     kind: domain
@@ -269,6 +399,12 @@ components:
       - REST
     implemented_by:
       - profile-runtime
+    data:
+      - 顧客ID
+      - セッションIDまたはプロフィールの版番号
+    owner: customer-platform-team
+    status: designed
+    description: Profile Serviceの責務・条件を定義する設計サンプル。
 realizations:
   - id: auth-runtime
     name: 認証API / Cloud Run
@@ -281,19 +417,33 @@ realizations:
     observability:
       - 認証成功率メトリクス
       - エラー率アラート
+    deployment_strategy: 新リビジョンへ5%→25%→100%と切り替え、5xx率上昇時は旧リビジョンへ戻す
+    location: asia-northeast1
+    owner: platform-team
+    status: designed
+    description: 認証API / Cloud Runの責務・条件を定義する設計サンプル。
   - id: auth-source
     name: 認証ソースコード
     kind: source
     location: src/components/auth/
+    owner: platform-team
+    status: designed
+    description: 認証ソースコードの責務・条件を定義する設計サンプル。
   - id: auth-iac
     name: 認証インフラ定義
     kind: iac
     location: infra/auth/main.tf
+    owner: platform-team
+    status: designed
+    description: 認証インフラ定義の責務・条件を定義する設計サンプル。
   - id: audit-storage
     name: 監査ログ / BigQuery
     kind: data
     provider: gcp
     service: BigQuery
+    owner: platform-team
+    status: designed
+    description: 監査ログ / BigQueryの責務・条件を定義する設計サンプル。
   - id: profile-runtime
     name: Profile API
     kind: runtime
@@ -301,16 +451,25 @@ realizations:
     service: Cloud Run
     authentication: OIDC
     public: true
+    owner: platform-team
+    status: designed
+    description: Profile APIの責務・条件を定義する設計サンプル。
   - id: identity-platform
     name: Identity Platform
     kind: resource
     provider: gcp
     service: Identity Platform
+    owner: platform-team
+    status: designed
+    description: Identity Platformの責務・条件を定義する設計サンプル。
   - id: audit-topic
     name: Auth Events
     kind: resource
     provider: gcp
     service: Pub/Sub
+    owner: platform-team
+    status: designed
+    description: Auth Eventsの責務・条件を定義する設計サンプル。
 verifications:
   - id: login-contract
     name: 認証API契約テスト
@@ -318,31 +477,88 @@ verifications:
     method: 成功応答とイベント形式を確認
     location: test/auth-contract.test.ts
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 認証API契約テストの責務・条件を定義する設計サンプル。
+    evidenced_by:
+      - login-contract-report
   - id: logout-unit
     name: セッション失効テスト
     level: unit
     method: ログアウト後のトークン無効化を確認
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: セッション失効テストの責務・条件を定義する設計サンプル。
+    location: test/planned/logout-unit.test.ts
+    evidenced_by:
+      - logout-unit-report
   - id: failover-test
     name: 障害復旧テスト
     level: resilience
     method: 障害注入時の成功率と復旧時間を測定
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 障害復旧テストの責務・条件を定義する設計サンプル。
+    location: test/planned/failover-test.test.ts
+    evidenced_by:
+      - failover-test-report
   - id: audit-test
     name: 監査ログ検証
     level: telemetry
     method: 認証イベントの監査ログ保存を確認
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: 監査ログ検証の責務・条件を定義する設計サンプル。
+    location: test/planned/audit-test.test.ts
+    evidenced_by:
+      - audit-test-report
   - id: profile-test
     name: Profile contract
     level: contract
     method: 参照・更新・拒否の契約を確認
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: Profile contractの責務・条件を定義する設計サンプル。
+    location: test/planned/profile-test.test.ts
+    evidenced_by:
+      - profile-test-report
   - id: iam-test
     name: IAM policy check
     level: iac
     method: サービスアカウントの権限を検査
     result: unknown
+    owner: quality-engineering
+    status: designed
+    description: IAM policy checkの責務・条件を定義する設計サンプル。
+    location: test/planned/iam-test.test.ts
+    evidenced_by:
+      - iam-test-report
+  - id: profile-accessibility-test
+    name: プロフィール画面のアクセシビリティ確認
+    level: acceptance
+    method: キーボード操作とスクリーンリーダーでラベル・エラー通知・保存完了を確認する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: プロフィール画面のアクセシビリティ確認の責務・条件を定義する設計サンプル。
+    location: test/planned/profile-accessibility-test.test.ts
+    evidenced_by:
+      - profile-accessibility-test-report
+  - id: profile-domain-test
+    name: プロフィール業務ルールの検証
+    level: domain
+    method: メールアドレスと表示名の境界値、禁止文字、変更可能項目をドメイン層で検査する
+    result: unknown
+    owner: quality-engineering
+    status: designed
+    description: プロフィール業務ルールの検証の責務・条件を定義する設計サンプル。
+    location: test/planned/profile-domain-test.test.ts
+    evidenced_by:
+      - profile-domain-test-report
 policies:
   - id: auth-baseline
     name: Logging Standard
@@ -357,6 +573,10 @@ policies:
       - audit-test
     rules:
       - 認証の成功と失敗を監査ログに残す
+    category: logging_standard
+    owner: customer-platform-team
+    status: designed
+    description: Logging Standardの責務・条件を定義する設計サンプル。
   - id: least-privilege
     name: IAM / Least Privilege
     applies_to:
@@ -369,6 +589,10 @@ policies:
       - iam-test
     rules:
       - 各サービスに最小限の権限を付与
+    category: iam_policy
+    owner: customer-platform-team
+    status: designed
+    description: IAM / Least Privilegeの責務・条件を定義する設計サンプル。
 decisions:
   - id: serverless-auth
     name: サーバーレス認証API
@@ -387,6 +611,9 @@ decisions:
       - authentication
       - auth-runtime
       - customer-platform
+    owner: customer-platform-team
+    status: designed
+    description: サーバーレス認証APIの責務・条件を定義する設計サンプル。
   - id: shared-audit
     name: 監査責務を共通化する
     category: ownership
@@ -400,6 +627,12 @@ decisions:
       - audit-service
       - authentication
       - profile-management
+    alternatives:
+      - 各サービス内で個別に監査ログを保持
+      - 共通ストレージだけを共有
+    owner: customer-platform-team
+    status: designed
+    description: 監査責務を共通化するの責務・条件を定義する設計サンプル。
 contracts:
   - id: login-api
     name: POST /login
@@ -407,18 +640,27 @@ contracts:
     specification: openapi/login.yaml
     verified_by:
       - login-contract
+    owner: customer-platform-team
+    status: designed
+    description: POST /loginの責務・条件を定義する設計サンプル。
   - id: user-authenticated
     name: UserAuthenticated
     kind: event
     specification: asyncapi/auth.yaml
     verified_by:
       - audit-test
+    owner: customer-platform-team
+    status: designed
+    description: UserAuthenticatedの責務・条件を定義する設計サンプル。
   - id: identity-api
     name: Identity API
     kind: external
     specification: contracts/identity.md
     verified_by:
       - login-contract
+    owner: customer-platform-team
+    status: designed
+    description: Identity APIの責務・条件を定義する設計サンプル。
 relations:
   - id: auth-to-idp
     from: auth-service
@@ -426,20 +668,168 @@ relations:
     type: calls
     protocol: https
     contract: identity-api
+    extensions:
+      timeout_ms: 2000
+      retries: 0
+    label: calls
+    description: auth-serviceからidentity-platformへのcalls接続。
   - id: auth-to-audit
     from: auth-service
     to: audit-topic
     type: publishes
     protocol: pubsub
     contract: user-authenticated
+    label: publishes
+    description: auth-serviceからaudit-topicへのpublishes接続。
   - id: audit-subscription
     from: audit-service
     to: audit-topic
     type: subscribes
     protocol: pubsub
     contract: user-authenticated
+    label: subscribes
+    description: audit-serviceからaudit-topicへのsubscribes接続。
   - id: audit-write
     from: audit-service
     to: audit-storage
     type: writes
     protocol: BigQuery API
+    label: writes
+    description: audit-serviceからaudit-storageへのwrites接続。
+qualities:
+  - id: profile-privacy
+    name: プロフィールAPIは目的外の個人情報を応答・ログへ出力しない
+    attribute: privacy
+    requirement: プロフィールAPIは目的外の個人情報を応答・ログへ出力しない
+    target: 許可フィールドのみ
+    unit: field-set
+    level: standard
+    risk: normal
+    realized_by:
+      - profile-service
+    verified_by:
+      - profile-test
+    owner: customer-platform-team
+    status: designed
+    description: プロフィールAPIは目的外の個人情報を応答・ログへ出力しないの責務・条件を定義する設計サンプル。
+  - id: profile-usability
+    name: 入力エラーの対象項目と修正方法を一度の応答で示す
+    attribute: usability
+    requirement: 入力エラーの対象項目と修正方法を一度の応答で示す
+    target: 100
+    unit: '%'
+    level: standard
+    risk: normal
+    realized_by:
+      - profile-service
+    verified_by:
+      - profile-test
+    owner: customer-platform-team
+    status: designed
+    description: 入力エラーの対象項目と修正方法を一度の応答で示すの責務・条件を定義する設計サンプル。
+  - id: profile-accessibility
+    name: キーボードのみで変更内容とエラーを確認できる
+    attribute: accessibility
+    requirement: キーボードのみで変更内容とエラーを確認できる
+    target: 100
+    unit: '% of critical flows'
+    level: standard
+    risk: normal
+    realized_by:
+      - profile-service
+    verified_by:
+      - profile-accessibility-test
+    owner: customer-platform-team
+    status: designed
+    description: キーボードのみで変更内容とエラーを確認できるの責務・条件を定義する設計サンプル。
+  - id: profile-testability
+    name: 業務ルールを外部サービスなしで検証できる
+    attribute: testability
+    requirement: 業務ルールを外部サービスなしで検証できる
+    target: 100
+    unit: '% of domain rules'
+    level: standard
+    risk: normal
+    realized_by:
+      - profile-service
+    verified_by:
+      - profile-domain-test
+    owner: customer-platform-team
+    status: designed
+    description: 業務ルールを外部サービスなしで検証できるの責務・条件を定義する設計サンプル。
+extensions:
+  example: true
+  verification_note: 説明用の架空設計。パス・日時は記述例であり、実環境や検証結果を示すものではない。
+evidence:
+  - id: login-contract-report
+    name: 認証API契約テストの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/login-contract/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: logout-unit-report
+    name: セッション失効テストの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/logout-unit/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: failover-test-report
+    name: 障害復旧テストの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/failover-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: audit-test-report
+    name: 監査ログ検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/audit-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: profile-test-report
+    name: Profile contractの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/profile-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: iam-test-report
+    name: IAM policy checkの証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/iam-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: profile-accessibility-test-report
+    name: プロフィール画面のアクセシビリティ確認の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/profile-accessibility-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned
+  - id: profile-domain-test-report
+    name: プロフィール業務ルールの検証の証跡保存先
+    description: 未実施。locationは実施後に保存するレポートの予定パス。
+    owner: quality-engineering
+    status: draft
+    location: artifacts/planned/profile-domain-test/report.json
+    result: unknown
+    extensions:
+      artifact_state: planned

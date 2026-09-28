@@ -32,7 +32,7 @@ describe('ArchModel v0.1 acceptance',()=>{
   expect(codes(s)).toEqual(expect.arrayContaining(['NO_PRODUCT','MISSING_FIELD','NO_SCENARIO','NO_REALIZATION','UNCOVERED','ORPHAN_COMPONENT','NO_IMPLEMENTATION']));
  });
  it('AC-07 asks one question, prioritizes value and supports localization',()=>{
-  const m=parseModel(bottom);expect(nextQuestion(m)?.id).toBe('NO_PRODUCT:model:');
+  const m=parseModel("version: '0.1'\nrealizations: [{id: existing-api, kind: runtime}]");expect(nextQuestion(m)?.id).toBe('NO_PRODUCT:model:');
   expect(nextQuestion(m,{locale:'en'})?.text).toContain('Who benefits');
   expect(nextQuestion(m,{messages:{NO_PRODUCT:'Who is it for?'}})?.text).toBe('Who is it for?');
   expect(nextQuestion(model())).toBeNull();
@@ -84,7 +84,7 @@ describe('robustness and semantic boundaries',()=>{
  });
  it('does not infer E2E or verified state from coverage alone',()=>{
   const c=completeness(model(),'authentication');expect(c.coverage).toBe('covered');expect(c.verified).toBe(false);
-  const m=model();for(const e of m.entities)if(e.kind==='verification')e.data.result='passed';expect(completeness(m,'authentication').verified).toBe(true);expect(validateModel(m).map(d=>d.code)).toContain('NO_EVIDENCE');
+  const m=model();m.edges=m.edges.filter(e=>e.relation!=='evidencedBy');for(const e of m.entities)if(e.kind==='verification')e.data.result='passed';expect(completeness(m,'authentication').verified).toBe(true);expect(validateModel(m).map(d=>d.code)).toContain('NO_EVIDENCE');
  });
  it('warns for public API, ADR, invalid Gherkin and unsupported state',()=>{
   const s="version: '0.1'\nrealizations: [{id: r, kind: runtime, public: true}]\ndecisions: [{id: d}]\nscenarios: [{id: s, type: gherkin, specification: Given only}]\ncomponents: [{id: c, status: operational}]";
