@@ -1,3 +1,4 @@
+import perspectiveReview from '../syntax/examples/perspective-review.archmodel.yaml?raw';
 import designMap from '../syntax/examples/design-map.archmodel.yaml?raw';
 import bottomUp from '../syntax/examples/bottom-up.archmodel.yaml?raw';
 import customer from '../syntax/examples/customer-platform.archmodel.yaml?raw';
@@ -8,7 +9,8 @@ export const authoringPrompt=`${instructions.trim()}\n\n---\n\n${reference.trim(
 export const examples=[
  {id:'design-map',title:'認証とプロフィール管理',description:'認証とプロフィール管理。入出力・失敗時の動作、9つの品質要求、API契約、監査・証跡を含む57要素。',source:designMap},
  {id:'bottom-up',title:'既存の技術構成から設計する',description:'設備監視APIから価値を逆引き。8種類のScenario、9種類のRealization、7種類の実接続を含む54要素。',source:bottomUp},
- {id:'customer-platform',title:'顧客プラットフォーム',description:'認証・監査基盤の詳細設計。4種類のContract、5種類のComponent、移行・運用までを含む54要素。',source:customer}
+ {id:'customer-platform',title:'顧客プラットフォーム',description:'認証・監査基盤の詳細設計。4種類のContract、5種類のComponent、移行・運用までを含む54要素。',source:customer},
+ {id:'perspective-review',title:'各観点の検討と対象外の理由',description:'5種類の検討状態、対象外の前提、保留中のリスク、再検討条件、独自観点を示す途中段階のExample。',source:perspectiveReview}
 ] as const;
 export const escapeHtml=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function siteBase(page:string,standalone=false){return page==='home'||standalone?'./':'../';}

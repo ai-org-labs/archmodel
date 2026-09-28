@@ -1,3 +1,4 @@
+import {installReviews} from './reviews.js';
 import {examples,navigation,siteBase} from './content.js';
 import {guideMarkup,mountGuide} from './guide.js';
 import './playground.css';
@@ -34,6 +35,7 @@ function headerMenu(label:string,ids:string[],className:string){
  menu.append(body);workspaceTools.append(menu);return menu;
 }
 headerMenu('表示設定',['lane-language','expanded','relations','scope-toggle'],'display-menu');
+workspaceTools.insertAdjacentHTML('beforeend','<button id="open-reviews">観点レビュー</button>');
 workspaceTools.append(el('checks'),el('edit'));
 headerMenu('ファイル',['new-model','add-element','load','file','save','svg','help'],'file-menu');
 workspaceTools.querySelector('#edit')!.textContent='〈 〉 DSL';
@@ -86,7 +88,7 @@ function inspect(){
  el('detail-kind').textContent=entity.kind;el('detail-title').textContent=entity.name;
  const fields=Object.entries(entity.data).filter(([key])=>fieldLabels[key]&&key!=='name');
  const edges=model.edges.filter(e=>e.from===entity.id||e.to===entity.id);
- el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。子要素はマップの＋で追加できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(fieldLabel(key,entity.kind))}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
+ el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button><button data-review-target="${escape(entity.id)}">観点レビュー</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。子要素はマップの＋で追加できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(fieldLabel(key,entity.kind))}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
 }
 
 function draw(refit=true){
@@ -134,8 +136,11 @@ el('save').onclick=()=>save('design.archmodel.yaml',editor.value,'text/yaml');el
 el('json').onclick=()=>{clearTimeout(timer);update();if(!validateModel(model).some(d=>d.severity==='error'))save('design.json',JSON.stringify(model,null,2),'application/json');};el('markdown').onclick=()=>{clearTimeout(timer);update();if(!validateModel(model).some(d=>d.severity==='error'))save('design.md',toMarkdown(model),'text/markdown');};
 el('load').onclick=()=>el<HTMLInputElement>('file').click();el('file').onchange=async()=>{const file=el<HTMLInputElement>('file').files?.[0];if(file)newSource(await file.text());};
 el('guide-content').innerHTML=guideMarkup();mountGuide(el('reference'));el('help').onclick=()=>el<HTMLDialogElement>('reference').showModal();el('open-guide').onclick=()=>el<HTMLDialogElement>('reference').showModal();el('close-help').onclick=()=>el<HTMLDialogElement>('reference').close();
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){cancelMapLink();closeEditor();el('check-panel').hidden=true;el('inspector').hidden=true;selectedId='';draw(false);}});update();
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]')){cancelMapLink();closeEditor();el('check-panel').hidden=true;el('inspector').hidden=true;selectedId='';draw(false);}});update();
 
+const reviewUI=installReviews({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource});
+el('open-reviews').onclick=()=>reviewUI.open(selectedId||undefined);
+document.addEventListener('click',event=>{const button=(event.target as Element).closest<HTMLElement>('[data-review-target]');if(button)reviewUI.open(button.dataset.reviewTarget);});
 const authoring=installAuthoring({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource,select:(id)=>{const preserve=qualitySummaryEditingId===id;qualitySummaryEditingId='';select(id,preserve);},save,beginLink});
 function assignVerification(id:string){
  const entity=model.entities.find(e=>e.id===id);if(!entity)return;
@@ -164,6 +169,7 @@ function chooseRelation(id:string,field:string,reverse:boolean,kinds:Kind[]){
 document.addEventListener('click',event=>{
  const button=(event.target as Element).closest<HTMLElement>('[data-fix-code]');if(!button)return;
  const code=button.dataset.fixCode!,id=button.dataset.fixEntity!,field=button.dataset.fixField!;const entity=model.entities.find(e=>e.id===id);
+ if(code.startsWith('REVIEW_')){reviewUI.open(id,field);return;}
  if(code==='NO_PRODUCT'){authoring.open('product');return;}if(!entity){openEditor();return;}
  const connect=(key:string,reverse:boolean,kinds:Kind[])=>chooseRelation(id,key,reverse,kinds);
  if(code==='NO_CAPABILITY')return connect('has',false,['capability']);

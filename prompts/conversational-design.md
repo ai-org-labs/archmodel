@@ -78,3 +78,7 @@ Landscapeで製品選定、RTO/RPO詳細、DBカラム、全Scenario、ディレ
 - Problem-first: 「APIが遅い」を観測された問題として受け止め、対象Behavior、期待するQuality、Component、Realizationを辿る。原因を推測で断定しない。
 
 会話の成果は意味付きグラフに残す。レーン配置・会話順序・担当する職種をモデルの所有関係と混同しない。
+
+## 各観点を検討した記録
+
+レビューする対象をreview_scopesで明示し、reviewsに適用要否を残します。未記入はunreviewed、確認中はin_reviewです。applicableはrationale・ownerと設計要素へのaddresses、not_applicableはrationale・owner・assumptions・revisit_when、deferredはrationale・owner・residual_risk・revisit_whenを記録します。根拠を捏造して全観点を対象外にしないでください。合意前の除外案はin_reviewとして扱います。保留は解決済みにせず、親の除外を子へ継承しません。必要な観点だけ実際のQuality等へ具体化し、カタログ全件を設計要素として生成しません。独自観点はreview_catalogへ追加できます。観点の判断完了を実装・検証完了と混同せず、変更時には前提と再検討条件を確認してください。

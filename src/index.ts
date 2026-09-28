@@ -9,3 +9,5 @@ export * from './model/authoring.js';
 export * from './model/presentation.js';
 export * from './model/lane-labels.js';
 export { planNextQuestions } from './model/questioning.js';
+
+export * from './model/reviews.js';

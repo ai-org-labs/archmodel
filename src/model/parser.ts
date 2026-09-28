@@ -1,3 +1,4 @@
+import {reviewStructureDiagnostics} from './reviews.js';
 import { load, JSON_SCHEMA } from 'js-yaml';
 import schema from '../../schema/archmodel.schema.json';
 import type { ArchitectureConnection, Diagnostic, Edge, Entity, Kind, Model, Relation, TraceRelation } from './types.js';
@@ -107,5 +108,9 @@ export function parseModel(source: string): Model {
   model.connections.push({...c});
   model.edges.push({from:c.from,to:c.to,relation:c.type,id:c.id,...(c.protocol?{protocol:c.protocol}:{}),...(c.contract?{contract:c.contract}:{}),...(c.label?{label:c.label}:{})});
  }
+ model.reviewCatalog=(raw.review_catalog??[]) as Model['reviewCatalog'];
+ model.reviewScopes=(raw.review_scopes??[]) as string[];
+ model.reviews=(raw.reviews??[]) as Model['reviews'];
+ model.diagnostics.push(...reviewStructureDiagnostics(model));
  return model;
 }

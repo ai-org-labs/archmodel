@@ -92,3 +92,7 @@ Plannerはモデルを変更しません。InferもDraft案の提示であり自
 [技術起点](../syntax/examples/bottom-up.archmodel.yaml)を利用できます。
 
 設計マップの「開く」で保存したYAMLを読み込めます。会話とマップが別のモデルを持つ運用にせず、同じファイルを受け渡してください。
+
+## 観点の判断記録
+
+対象のreview_scopesを開始すると、記録のない観点は未検討として質問候補になります。reviewsで対象・対象外・保留と根拠を保存し、`archmodel reviews model.yaml [target-id]` で一覧を取得できます。独自観点はreview_catalogで追加します。未開始の既存文書には追加の観点警告を出しません。構文リファレンスの「観点の検討記録」に従い、対象外の理由や前提を推測で確定させず、未合意ならin_reviewにしてください。

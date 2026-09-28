@@ -1,3 +1,4 @@
 implementation: src/model/analysis.ts#completeness
 axes: [design, component, implementation, coverage, verified, observability]
 source: declared-model-only
+review: separate perspective judgment summary; never proof of implementation or verification

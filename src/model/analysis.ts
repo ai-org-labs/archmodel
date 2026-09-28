@@ -1,3 +1,4 @@
+import {reviewDiagnostics,reviewSummary} from './reviews.js';
 import defaults from '../../rules/questioning.json';
 import type { Diagnostic, Entity, Model, Question, Relation, TraversalOptions, VerificationSummary } from './types.js';
 export const outgoing=(m:Model,id:string,r?:Relation)=>m.edges.filter(e=>e.from===id&&(!r||e.relation===r));
@@ -34,6 +35,7 @@ export function validateModel(model:Model):Diagnostic[]{
    if(!c.implementation||(e.data.status!=='implemented'&&!c.verified)||(e.data.status==='operational'&&!c.observability))warn('STATE_GAP',e,'状態を裏付ける実装・成功した検証・運用情報が不足しています');
   }
  }
+ diagnostics.push(...reviewDiagnostics(model));
  return diagnostics;
 }
 export interface TracePath {nodes:string[]; relations:Relation[]}
@@ -82,7 +84,7 @@ export function completeness(model:Model,id:string){
  // Completeness has a dedicated forward realization scope, never architecture dependency closure.
  const ids=relatedIds(model,id,{direction:'forward',depth:model.entities.length,relationTypes:DEFAULT_RELATIONS});
  const entities=model.entities.filter(e=>ids.has(e.id));const assurance=verificationSummary(model,id);
- return {design:entities.some(e=>['behavior','quality','policy','component'].includes(e.kind)),component:entities.some(e=>e.kind==='component'),implementation:entities.some(e=>e.kind==='realization'),coverage:assurance.coverage,verified:assurance.status==='verified',verification_status:assurance.verification_status,assurance_status:assurance.status,observability:entities.some(e=>e.kind==='realization'&&Array.isArray(e.data.observability)&&e.data.observability.length>0)};
+ return {review:reviewSummary(model,id),design:entities.some(e=>['behavior','quality','policy','component'].includes(e.kind)),component:entities.some(e=>e.kind==='component'),implementation:entities.some(e=>e.kind==='realization'),coverage:assurance.coverage,verified:assurance.status==='verified',verification_status:assurance.verification_status,assurance_status:assurance.status,observability:entities.some(e=>e.kind==='realization'&&Array.isArray(e.data.observability)&&e.data.observability.length>0)};
 }
 export interface QuestionOptions { locale?:'ja'|'en'; messages?:Record<string,string>; priorities?:Record<string,number> }
 export function nextQuestions(model:Model,options:QuestionOptions={}):Question[]{
@@ -94,7 +96,7 @@ export function nextQuestions(model:Model,options:QuestionOptions={}):Question[]
   let priority=d.code==='NO_PRODUCT'?110:priorities[e?.kind??'product']??50;
   if(high&&['UNCOVERED','NO_REALIZATION'].includes(d.code))priority=85;
   if(d.code==='PUBLIC_AUTH')priority=84;
-  return {id:`${d.code}:${d.entityId??'model'}:${d.field??''}`,entityId:d.entityId,field:d.field,priority,text:(messages[d.code]??messages.MISSING_FIELD).replaceAll('{name}',e?.name??'Product').replaceAll('{field}',d.field??d.code),reason:d.message};
+  return {id:`${d.code}:${d.entityId??'model'}:${d.field??''}`,entityId:d.entityId,field:d.field,priority,text:(d.code.startsWith('REVIEW_')?(options.locale==='en'?`Review ${d.field} for ${e?.name??'model'}: ${d.code}`:d.message):(messages[d.code]??messages.MISSING_FIELD)).replaceAll('{name}',e?.name??'Product').replaceAll('{field}',d.field??d.code),reason:d.message};
  }).sort((a,b)=>b.priority-a.priority||a.id.localeCompare(b.id));
 }
 export const nextQuestion=(model:Model,options:QuestionOptions={})=>nextQuestions(model,options)[0]??null;

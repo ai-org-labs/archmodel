@@ -1,0 +1,56 @@
+# 観点レビューの途中経過。未検討・保留の警告は意図したものです。
+version: '0.1'
+product:
+  id: converter
+  name: オフライン文書変換
+  purpose: 端末内で機密文書を変換する
+  primary_users: [社内の文書担当者]
+  user_value: 外部送信せず文書を変換できる
+  scope: [ローカル変換]
+  owner: document-team
+  capabilities:
+    - id: conversion
+      name: 文書変換
+      purpose: 入力ファイルを指定形式へ変換する
+      actor: [文書担当者]
+      inputs: [入力ファイル]
+      outputs: [変換ファイル]
+review_catalog:
+  - id: distribution_cost
+    name: 配布・保守費用
+    description: オフライン環境への更新配布と問い合わせ対応の費用を確認する
+review_scopes: [converter, conversion]
+reviews:
+  - id: review-boundary
+    target: converter
+    perspective: system_boundary
+    status: applicable
+    owner: document-team
+    rationale: ローカル変換を今回の設計範囲とする
+    addresses: [conversion]
+  - id: review-availability
+    target: converter
+    perspective: quality.availability
+    status: not_applicable
+    owner: document-team
+    rationale: 常時稼働するAPIやサーバーを提供しない
+    assumptions: [利用者の端末でオフライン実行する, 稼働時間のSLAを提供しない]
+    revisit_when: サーバー提供または稼働時間の保証が必要になったとき
+  - id: review-data
+    target: converter
+    perspective: data_lifecycle
+    status: in_review
+    owner: security-team
+    rationale: 一時ファイルの削除タイミングと異常終了時の扱いを確認している
+  - id: review-recovery
+    target: converter
+    perspective: quality.recoverability
+    status: deferred
+    owner: document-team
+    rationale: 中断位置からの再開は初版の対象に含めず利用頻度を計測する
+    residual_risk: 変換途中に停止した場合は最初からやり直す必要がある
+    revisit_when: 1件の処理が10分を超える、または再実行の問い合わせが月3件を超えたとき
+  - id: review-cost
+    target: converter
+    perspective: distribution_cost
+    status: unreviewed

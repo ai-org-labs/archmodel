@@ -1,3 +1,4 @@
+import {reviewRows,reviewScopeIds,reviewSummary} from './reviews.js';
 import { dump } from 'js-yaml';
 import { renderDiagram } from '../focused/render.js';
 import type { DiagramColor, DiagramModel } from '../focused/types.js';
@@ -38,6 +39,15 @@ export function toMarkdown(model:Model):string{
  }
  text+='## Traceability\n\n';for(const e of model.edges.filter(e=>!e.id))text+=`- ${md(e.from)} → ${e.relation} → ${md(e.to)}\n`;
  text+='\n## Architecture connections\n\n';for(const c of model.connections)text+=`- ${md(c.id)}: ${md(c.from)} → ${md(c.type)} → ${md(c.to)}; protocol: ${md(c.protocol)}; contract: ${md(c.contract)}; ${md(c.label??c.description)}\n`;
+ text+='\n## Perspective reviews\n\n';
+ if(!reviewScopeIds(model).length)text+='未開始（検討済みとは扱わない）\n';
+ for(const target of reviewScopeIds(model)){
+  const summary=reviewSummary(model,target);text+=`\n### ${md(target)}: ${summary.resolved}/${summary.total} resolved\n\n`;
+  for(const row of reviewRows(model,target)){
+   text+=`- ${md(row.perspective.id)}: ${row.status}${row.gaps.length?` / incomplete: ${row.gaps.join(', ')}`:''}\n`;
+   if(row.record)for(const [key,value]of Object.entries(row.record))if(!['target','perspective','status'].includes(key))text+=`  - ${key}: ${md(Array.isArray(value)?value.join('; '):value)}\n`;
+  }
+ }
  text+='\n## Validation\n\n';for(const d of validateModel(model))text+=`- ${d.severity} ${d.code}: ${md(d.message)}\n`;
  return text;
 }

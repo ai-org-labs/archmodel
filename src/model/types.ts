@@ -8,7 +8,7 @@ export interface Entity { id: string; kind: Kind; name: string; path: string; da
 export interface Edge { from: string; to: string; relation: Relation; id?: string; protocol?: string; contract?: string; label?: string }
 export interface ArchitectureConnection {id:string; from:string; to:string; type:ConnectionType; protocol?:string; contract?:string; label?:string; description?:string; extensions?:Record<string,unknown>}
 export interface Diagnostic { code: string; severity: 'error'|'warning'; path: string; message: string; entityId?: string; field?: string }
-export interface Model { version: '0.1'; entities: Entity[]; edges: Edge[]; connections: ArchitectureConnection[]; diagnostics: Diagnostic[]; source: Record<string, unknown> }
+export interface Model { version: '0.1'; entities: Entity[]; edges: Edge[]; connections: ArchitectureConnection[]; diagnostics: Diagnostic[]; source: Record<string, unknown>; reviewCatalog?:ReviewPerspective[]; reviewScopes?:string[]; reviews?:DesignReview[] }
 export interface Question { id: string; entityId?: string; field?: string; priority: number; text: string; reason: string }
 export interface TraversalOptions { depth?: number; relationTypes?: readonly Relation[]; direction?: 'both'|'forward'|'reverse' }
 export interface VerificationSummary { coverage:'uncovered'|'covered'; verification_status:'unknown'|'passed'|'failed'; status:'uncovered'|'covered_unknown'|'verified'|'failed'; verificationIds:string[] }
@@ -38,3 +38,7 @@ export interface QuestionPlan {
  deferred: DesignQuestion[];
  rationaleCodes: string[];
 }
+
+export type ReviewStatus = 'unreviewed' | 'in_review' | 'applicable' | 'not_applicable' | 'deferred';
+export interface ReviewPerspective {id:string;name:string;description?:string}
+export interface DesignReview {id:string;perspective:string;target:string;status?:ReviewStatus;rationale?:string;assumptions?:string[];residual_risk?:string;revisit_when?:string;owner?:string;addresses?:string[]}

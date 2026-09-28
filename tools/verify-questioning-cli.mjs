@@ -17,3 +17,13 @@ for (const flags of [['--phase', 'oops'], ['--focus', 'missing'], ['--depth', 'o
 assert.equal(json('plan', 'syntax/examples/customer-platform.archmodel.yaml').primary, null);
 assert.equal(run('validate', fixture).status, 0);
 console.log('Planner CLI integration checks passed.');
+
+const reviewFixture='syntax/examples/perspective-review.archmodel.yaml';
+assert.equal(json('reviews',fixture).summary.tracked,false);
+const review=json('reviews',reviewFixture,'converter');
+assert.equal(review.summary.complete,false);
+assert.equal(review.summary.resolved,2);
+assert.equal(review.summary.counts.deferred,1);
+assert.equal(json('reviews',reviewFixture,'conversion').summary.resolved,0);
+assert.equal(run('reviews',reviewFixture,'missing').status,1);
+console.log('Review CLI integration checks passed.');

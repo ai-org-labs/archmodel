@@ -31,7 +31,7 @@ console.log(`Standalone playground: ${(Buffer.byteLength(html) / 1024).toFixed(0
 
 // Publish canonical resources alongside the rendered pages for people and AI tools.
 for (const dir of ['syntax', 'schema', 'docs', 'syntax/examples']) await mkdir(`${root}site-dist/${dir}`, {recursive:true});
-for (const path of ['syntax/reference.md', 'schema/archmodel.schema.json', 'docs/AI_PROMPT_TEMPLATE.md', 'docs/EXAMPLES.md', 'syntax/examples/design-map.archmodel.yaml', 'syntax/examples/bottom-up.archmodel.yaml', 'syntax/examples/customer-platform.archmodel.yaml']) await copyFile(`${root}${path}`, `${root}site-dist/${path}`);
+for (const path of ['syntax/reference.md', 'schema/archmodel.schema.json', 'docs/AI_PROMPT_TEMPLATE.md', 'docs/EXAMPLES.md', 'syntax/examples/perspective-review.archmodel.yaml', 'syntax/examples/design-map.archmodel.yaml', 'syntax/examples/bottom-up.archmodel.yaml', 'syntax/examples/customer-platform.archmodel.yaml']) await copyFile(`${root}${path}`, `${root}site-dist/${path}`);
 const prompt = await readFile(`${root}docs/AI_PROMPT_TEMPLATE.md`, 'utf8');
 const reference = await readFile(`${root}syntax/reference.md`, 'utf8');
 await writeFile(`${root}site-dist/archmodel-ai-prompt.txt`, `${prompt.trim()}\n\n---\n\n${reference.trim()}\n`);

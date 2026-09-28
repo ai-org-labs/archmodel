@@ -7,6 +7,7 @@ const phases: ConversationPhase[] = ['landscape', 'shape', 'depth', 'realization
 const index = (p: ConversationPhase) => phases.indexOf(p);
 const present = (v: unknown) => v !== undefined && v !== null && v !== '' && (!Array.isArray(v) || v.length > 0);
 const phaseFor = (d: Diagnostic, e?: Entity): ConversationPhase => {
+ if (d.code.startsWith('REVIEW_')) return 'shape';
  if (d.code === 'QUALITY_DISCOVERY') return 'shape';
  if (d.code === 'DECISION_REVIEW') return 'realization';
  if (['NO_PRODUCT', 'NO_CAPABILITY'].includes(d.code) || e?.kind === 'product') return 'landscape';
@@ -60,7 +61,7 @@ export function planNextQuestions(model: Model, context: ConversationContext = {
  const seen = new Set<string>();
  for (const d of ds.filter(d => d.severity === 'warning')) {
   const e = entities.get(d.entityId ?? '');
-  let code = d.code, message: string | undefined;
+  let code = d.code.startsWith('REVIEW_')?`${d.code}:${d.field}`:d.code, message: string | undefined = d.code.startsWith('REVIEW_')?(locale==='ja'?d.message:`Review ${d.field}: ${d.code}`):undefined;
   let concept: Kind = e?.kind ?? 'product';
   let targetPhase = phaseFor(d, e);
   let strategy: DesignQuestion['strategy'] = 'ask';

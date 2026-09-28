@@ -4,10 +4,49 @@ ArchModelは価値・振る舞い・品質・契約・論理責務・技術実�
 
 ## 文書と識別子
 
-`version: '0.1'`が必須です。IDは設計要素と接続で共通の名前空間を使い、文書全体で一意です。`^[A-Za-z][A-Za-z0-9_.-]*$`に従います。参照は完全一致のIDで、前方参照できます。
+`version: '0.1'`が必須です。IDは設計要素・接続・検討記録で共通の名前空間を使い、文書全体で一意です。`^[A-Za-z][A-Za-z0-9_.-]*$`に従います。参照は完全一致のIDで、前方参照できます。
 
 トップレベルのproducts / capabilities / behaviors / scenarios / qualities / policies / decisions / components / realizations / contracts / verifications / evidenceは定義の配列です。productは単数形の略記です。
 構造上の必須項目はSchemaのrequired、設計完成に必要な項目はx-design-requiredで定義します。未完成モデルはwarningとして保持し、不正な型・参照切れ・不正な関連はerrorにします。
+
+## 観点の検討記録
+
+設計に含めない項目も、検討したうえで外したのかを残します。設計要素を増やさず、文書直下のメタデータとして扱います。
+
+- `review_scopes`: 検討する対象要素IDの配列。記録がなくても、その対象の全観点を未検討として診断します。
+- `reviews`: 対象 `target` と観点 `perspective` ごとの判断。組み合わせは一意です。記録を作ると対象の検討を開始します。
+- `review_catalog`: 独自観点の追加定義（id / name / description）。組み込み観点は上書きできません。観点IDは設計要素IDとは別の名前空間です。
+
+組み込み観点は `system_boundary` / `actors` / `data_lifecycle` / `external_dependencies` / `assumptions` / `failure_modes` と、Quality.attributeの各値に `quality.` を付けたものです。品質要求を全種類作ることを求めるものではありません。
+
+| status | 意味 | 判断に必要な記録 |
+| --- | --- | --- |
+| unreviewed | 未検討（未記入時も同じ） | まだ判断していない |
+| in_review | 検討中 | 確認途中の内容をrationaleに残す |
+| applicable | 対象 | rationale・owner・addresses（設計要素IDの配列） |
+| not_applicable | 対象外 | rationale・owner・assumptions（前提の配列）・revisit_when |
+| deferred | 保留 | rationale・owner・residual_risk・revisit_when |
+
+```yaml
+review_scopes: [converter]
+reviews:
+  - id: review-converter-availability
+    target: converter
+    perspective: quality.availability
+    status: not_applicable
+    owner: product-team
+    rationale: ローカル実行のみで常時稼働サービスを提供しない
+    assumptions: [利用者の端末でオフライン実行する]
+    revisit_when: サーバー経由の提供や稼働時間の保証を求められたとき
+```
+
+上記のconverterは同じ文書で定義する必要があります。全体例は `syntax/examples/perspective-review.archmodel.yaml` を参照してください。
+
+未記入は対象外を意味しません。親の判断を子へ継承しません。対象外のaddressesは矛盾として診断します。根拠不足でもDraftとして保存できますが判断完了には数えません。保留は条件を記録しても未解決です。既存文書でreview_scopesもreviewsもなければ検討は未開始で、追加の観点警告は出しません。
+
+観点の判断完了と、設計・実装・検証の完了は別です。対象外の記録で既存QualityやVerificationの不足を消しません。前提変更を自動判断しないため、変更時には担当者がrevisit_whenと照合します。UIでaddressesの参照先を削除すると、その記録をin_reviewへ戻します。
+
+Playgroundの「観点レビュー」で対象ごとに編集できます。CLIの `archmodel reviews model.yaml [target-id]` で集計と各観点の状態を取得できます。YAML・Markdown出力にも記録が残ります。
 
 ## アーキテクチャの接続
 
@@ -198,6 +237,9 @@ Scenarioはtype / specification、Behaviorはuse_cases、Policyはrules、Decisi
 | evidence | 配列<evidence> | 任意 |
 | contracts | 配列<contract> | 任意 |
 | relations | 配列<architectureRelation> | 任意 |
+| review_catalog | 配列<reviewPerspective> | 任意 |
+| review_scopes | 配列<string> | 任意 |
+| reviews | 配列<designReview> | 任意 |
 
 ### product
 
@@ -521,4 +563,27 @@ Scenarioはtype / specification、Behaviorはuse_cases、Policyはrules、Decisi
 | label | string | 任意 |
 | description | string | 任意 |
 | extensions | object | 任意 |
+
+### reviewPerspective
+
+| フィールド | 型・Enum | 必須性 |
+| --- | --- | --- |
+| id | string | 構造上必須 |
+| name | string | 構造上必須 |
+| description | string | 任意 |
+
+### designReview
+
+| フィールド | 型・Enum | 必須性 |
+| --- | --- | --- |
+| id | string | 構造上必須 |
+| perspective | string | 構造上必須 |
+| target | string | 構造上必須 |
+| status | `unreviewed` / `in_review` / `applicable` / `not_applicable` / `deferred` | 任意 |
+| rationale | string | 任意 |
+| assumptions | 配列<string> | 任意 |
+| residual_risk | string | 任意 |
+| revisit_when | string | 任意 |
+| owner | string | 任意 |
+| addresses | 配列<string> | 任意 |
 

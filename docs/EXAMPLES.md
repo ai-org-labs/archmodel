@@ -1,6 +1,6 @@
 # Exampleの読み方と網羅範囲
 
-3つのExampleはすべて、Product / Capability / Behavior / Scenario / Quality / Policy / Decision / Component / Realization / Contract / Verification / Evidenceの12種類を含む架空の設計です。
+以下の3つの詳細設計Exampleはすべて、Product / Capability / Behavior / Scenario / Quality / Policy / Decision / Component / Realization / Contract / Verification / Evidenceの12種類を含む架空の設計です。
 設計の成立条件と具体的な検証方法を記載し、構文・参照・設計上の不足の診断が出ない状態にしています。これは設計対象のシステムが実装・検証済みであることを意味しません。
 
 ## 認証とプロフィール管理
@@ -59,3 +59,9 @@ Decisionのacceptedは、この架空設計の前提として採用した案を�
 ## 更新したExampleを開く
 
 Examplesページで選び、PlaygroundでYAMLとマップを確認してください。保存済みの下書きがある場合はそちらが復元されます。「最新のExampleに戻す」で更新版へ切り替えられます。編集中の内容は先にYAML保存してください。
+
+## 各観点の検討と対象外の理由
+
+`perspective-review.archmodel.yaml` は詳細設計に入る前の小さなモデルです。従来の3例の項目網羅とは別に、5種類の検討状態を示します。未検討・検討中・保留と設計不足の警告が残るのは意図した状態です。
+
+Productの可用性は前提付きで対象外、データのライフサイクルは検討中、回復性はリスクを残して保留しています。Capabilityの判断は親から継承されず未検討です。「観点レビュー」で対象を切り替えて確認できます。独自観点の配布・保守費用も追加しています。網羅のためにすべての品質要求を作る必要はありません。

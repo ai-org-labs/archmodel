@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
-import { renderDesignMap, parseModel, validateModel, nextQuestion, planNextQuestions, traceWhy, renderView, qualityMatrix, toMarkdown, toYaml, backlogCandidates, directoryProposal } from '../dist/archmodel.js';
+import { renderDesignMap, parseModel, validateModel, nextQuestion, planNextQuestions, traceWhy, renderView, qualityMatrix, reviewRows, reviewScopeIds, reviewSummary, toMarkdown, toYaml, backlogCandidates, directoryProposal } from '../dist/archmodel.js';
 const [command,file,arg,...rest]=process.argv.slice(2);
-const help='Usage: npm run cli -- <validate|question|plan|why|view|matrix|json|yaml|markdown|backlog|directories> file.archmodel.yaml [id|view] [--strict]\nPlanner: plan|question file [--phase landscape|shape|depth|realization|assurance] [--focus id[,id]] [--depth overview|normal|deep] [--locale ja|en] [--format json|markdown]';
+const help='Usage: npm run cli -- <validate|question|plan|reviews|why|view|matrix|json|yaml|markdown|backlog|directories> file.archmodel.yaml [id|view] [--strict]\nPlanner: plan|question file [--phase landscape|shape|depth|realization|assurance] [--focus id[,id]] [--depth overview|normal|deep] [--locale ja|en] [--format json|markdown]';
 function plannerOptions(args) {
  const context = {}, allowed = ['--phase', '--focus', '--depth', '--locale', '--format'];
  let format = 'json';
@@ -46,6 +46,7 @@ try {
    }
    case 'why': if(!model.entities.some(e=>e.id===arg))throw new Error(`Unknown ID: ${arg}`);result=traceWhy(model,arg);break;
    case 'view': if(!['map','connections','contracts','capability','behavior','architecture','policy','decision','verification','implementation','impact'].includes(arg??'capability'))throw new Error('Unknown view');result=arg==='map'?renderDesignMap(model).svg:renderView(model,arg??'capability').svg;break;
+   case 'reviews': {const targets=arg?[arg]:reviewScopeIds(model);result={summary:reviewSummary(model,arg),scopes:targets.map(target=>({target,summary:reviewSummary(model,target),rows:reviewRows(model,target)}))};break;}
    case 'matrix': result=qualityMatrix(model);break;
    case 'json': result=model;break;
    case 'yaml': result=toYaml(model);break;
