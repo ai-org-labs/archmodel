@@ -14,5 +14,3 @@ export * from './model/reviews.js';
 
 export * from './model/coverage.js';
 export * from './model/model-map.js';
-
-export * from './model/map-completeness.js';
