@@ -1,3 +1,4 @@
+import {mapCompleteness,traceStages,type CoverageTone} from './map-completeness.js';
 import schema from '../../schema/archmodel.schema.json';
 import {escapeXml} from '../focused/render.js';
 import {wrapText} from '../focused/layout.js';
@@ -25,7 +26,7 @@ export function relationLayer(relation:string):RelationLayer{
  if(['appliesTo','affects'].includes(relation))return 'governance';
  return 'architecture';
 }
-export interface ModelMapOptions {relationMode?:'cards'|'selected'|'all';relationLayer?:RelationLayer;relationTargetIds?:readonly string[];focus?:string;perspective?:string;selectedId?:string;expandedIds?:readonly string[];reviewTargetIds?:readonly string[];expanded?:boolean;showRelations?:boolean;documentExpanded?:boolean}
+export interface ModelMapOptions {relationMode?:'cards'|'selected'|'all';relationLayer?:RelationLayer;focus?:string;perspective?:string;selectedId?:string;expandedIds?:readonly string[];reviewTargetIds?:readonly string[];expanded?:boolean;showRelations?:boolean;documentExpanded?:boolean}
 /** Shared projection for overview and focus. Layout state never enters the DSL. */
 export function projectModelMap(model:Model,options:ModelMapOptions={}){
  const errors=validateModel(model).filter(d=>d.severity==='error');if(errors.length)throw new Error(errors.map(e=>e.message).join('\n'));
@@ -48,11 +49,63 @@ export function renderModelMap(model:Model,options:ModelMapOptions={}){
  const escape=escapeXml,parts:string[]=[],positions=new Map<string,{x:number;y:number;height:number}>();
  const text=(value:string,x:number,y:number,size=12,color='#304b5a')=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}">${escape(value)}</text>`;
  const action=(label:string,x:number,y:number,attributes:string,w=132)=>`<g ${attributes} role="button" tabindex="0" aria-label="${escape(label)}" class="model-map-action"><rect x="${x}" y="${y-16}" width="${w}" height="25" rx="4" fill="#e1f2ef" stroke="#94bfb7"/>${text(label,x+7,y,11)}</g>`;
- const docLines=[`version: ${model.version} · ${model.entities.length} 要素 · ${model.edges.length} 関係`,`関係レイヤー: ${relationLayers[layer]} · ${visibleEdges.length+visibleReviewLinks.length}/${projection.edges.length+projection.reviewLinks.length}件 · ${mode==='cards'?'関係カード（線なし）':mode==='selected'?'選択した関係線':'全ての関係線'}`,`観点 ${coverage.concluded}/${coverage.total} 結論あり · 未結論 ${coverage.unconcluded} · 保留は未解決`,...(options.documentExpanded?[`review_scopes: ${stringify(model.source.review_scopes??[])}`,`extensions: ${stringify(model.source.extensions)}`,...projection.document.catalog.map(p=>`${p.id}: ${p.name} — ${p.description??''}`)]:[])];
+ const docLines=[`version: ${model.version} · ${model.entities.length} 要素 · ${model.edges.length} 関係`,`関係レイヤー: ${relationLayers[layer]} · ${visibleEdges.length+visibleReviewLinks.length}/${projection.edges.length+projection.reviewLinks.length}件 · ${mode==='cards'?'線なし':mode==='selected'?'選択した関係線':'全ての関係線'}`,`観点 ${coverage.concluded}/${coverage.total} 結論あり · 未結論 ${coverage.unconcluded} · 保留は未解決`,...(options.documentExpanded?[`review_scopes: ${stringify(model.source.review_scopes??[])}`,`extensions: ${stringify(model.source.extensions)}`,...projection.document.catalog.map(p=>`${p.id}: ${p.name} — ${p.description??''}`)]:[])];
  let docY=38;for(const line of docLines)for(const l of wrapText(line,width-400,13)){parts.push(text(l,32,docY,13));docY+=20;}
  parts.push(action(options.documentExpanded?'文書情報を閉じる':'文書・観点定義を展開',width-350,40,'data-map-document-toggle="true"',175),action('文書情報を編集',width-165,40,'data-map-document-edit="true"',145));
- const top=Math.max(100,docY+24),ys=modelMapLanes.map(()=>top+50);
- modelMapLanes.forEach((lane,i)=>parts.push(text(lane.title,32+i*340,top+22,16)));
+ const completeness=mapCompleteness(model,options.focus);
+ const colors:Record<CoverageTone,string>={recorded:'#e4edf5',missing:'#fff0e5',pending:'#fff4cc',excluded:'#eeedf4',failed:'#fce2e1'};
+ const nameLink=(entity:{id:string;name:string},x:number,y:number,w:number)=>{
+  const lines=wrapText(`${entity.name} (${entity.id})`,w,11);
+  parts.push(`<g data-map-reveal="${escape(entity.id)}" role="button" tabindex="0" aria-label="${escape(entity.name+'の設計を表示')}">`);
+  for(const line of lines){parts.push(text(line,x,y,11,'#126a83'));y+=16;}parts.push('</g>');return y;
+ };
+ let overviewY=Math.max(110,docY+24);
+ parts.push(`<g data-map-section="trace">`,text('設計のつながり — 対象ごとの対応と未接続',32,overviewY,19));overviewY+=26;
+ parts.push(text('記録あり ≠ 設計完了。未接続は構造上の不足候補です。不要と判断した場合も、下の観点表で理由を確認します。',32,overviewY,13));overviewY+=28;
+ const labelWidth=240,cellWidth=(width-64-labelWidth)/traceStages.length;
+ parts.push(text('対象',44,overviewY,13));traceStages.forEach((s,i)=>parts.push(text(`${s.name} / ${s.field}`,32+labelWidth+i*cellWidth+8,overviewY,12)));overviewY+=16;
+ if(!completeness.rows.length){parts.push(text('Product・Capabilityの検討対象が未定義です。既存要素は下の全要素マップに残っています。',44,overviewY+20,13));overviewY+=48;}
+ for(const row of completeness.rows){
+  const rowY=overviewY;let rowBottom=rowY+64;
+  const rowPartsStart=parts.length;
+  let targetY=nameLink(row.target,44,rowY+22,labelWidth-24)+16;
+  if(row.targetGaps.length)for(const line of wrapText('! 未入力: '+row.targetGaps.join(', '),labelWidth-24,11)){parts.push(text(line,44,targetY,11,'#9b3b20'));targetY+=17;}
+  rowBottom=Math.max(rowBottom,targetY+12);
+  row.cells.forEach((cell,i)=>{
+   const x=32+labelWidth+i*cellWidth;let y=rowY+22;
+   const localStart=parts.length;
+   for(const line of wrapText(cell.summary,cellWidth-16,11)){parts.push(text(line,x+8,y,11));y+=17;}
+   for(const entity of cell.items)y=nameLink(entity,x+8,y+3,cellWidth-16)+3;
+   for(const gap of cell.gaps){parts.push(`<g data-map-reveal="${escape(gap.id)}" role="button" tabindex="0" aria-label="${escape(gap.label)}">`);for(const line of wrapText('! '+gap.label,cellWidth-16,11)){parts.push(text(line,x+8,y+3,11,'#9b3b20'));y+=16;}parts.push('</g>');y+=6;}
+   y=Math.max(y+12,rowY+60);rowBottom=Math.max(rowBottom,y);
+   parts.splice(localStart,0,`<rect data-trace-cell="${cell.stage.id}" data-trace-target="${escape(row.target.id)}" data-state="${cell.tone}" x="${x+2}" y="${rowY}" width="${cellWidth-4}" height="${y-rowY}" rx="4" fill="${colors[cell.tone]}"/>`);
+  });
+  parts.splice(rowPartsStart,0,`<rect x="32" y="${rowY}" width="${labelWidth-4}" height="${rowBottom-rowY}" fill="#f0eee7"/>`);overviewY=rowBottom+12;
+ }
+ parts.push('</g>');overviewY+=30;
+ parts.push(`<g data-map-section="reviews">`,text('設計観点 — 未記入も含む判断の全体像',32,overviewY,19));overviewY+=25;
+ parts.push(text('未検討 / 検討中 / 対象 / 対象外 / 保留を区別。対象は設計参照の記録であり、実装や検証の完了を意味しません。',32,overviewY,13));overviewY+=24;
+ parts.push(text('各セルに状態と理由を表示します。選択すると判断・根拠・再検討条件を確認できます。',32,overviewY,12));overviewY+=28;
+ // Repeat the perspective column in panels so many scopes never compress the text.
+ const scopeBatches=Array.from({length:Math.ceil(completeness.rows.length/5)},(_,i)=>completeness.rows.slice(i*5,i*5+5));
+ for(const batch of scopeBatches){
+  const reviewWidth=(width-64-300)/batch.length;
+  parts.push(text('観点 / DSL名',44,overviewY,12));let headingBottom=overviewY;
+  batch.forEach((r,i)=>{headingBottom=Math.max(headingBottom,nameLink(r.target,340+i*reviewWidth,overviewY,reviewWidth-20));});overviewY=headingBottom+12;
+  for(const perspective of projection.document.catalog.filter(p=>!options.perspective||p.id===options.perspective)){
+   const labelLines=[...wrapText(perspective.name,280,12),...wrapText(perspective.id,280,10)];
+   const cellTexts=batch.map(r=>{const row=r.reviews.find(v=>v.perspective.id===perspective.id)!;const rationale=row.record?.rationale??'判断の記録なし';const excerpt=rationale.length>65?rationale.slice(0,65)+'…':rationale;return {row,lines:[...wrapText(row.label,reviewWidth-24,12),...wrapText(excerpt,reviewWidth-24,11),...(row.status==='applicable'?[...wrapText('設計: '+(row.addresses.map(e=>e.name).join(' / ')||'参照なし'),reviewWidth-24,11),...wrapText('検証: '+(row.verifications.map(e=>`${e.name} [${e.data.result??'unknown'}]`).join(' / ')||'参照先からの経路なし'),reviewWidth-24,11)]:[]),...(row.gaps.length?wrapText('不足: '+row.gaps.join(', '),reviewWidth-24,10):[])]};});
+   const rowHeight=Math.max(labelLines.length*17+16,...cellTexts.map(c=>c.lines.length*17+16));
+   parts.push(`<rect x="32" y="${overviewY}" width="296" height="${rowHeight-3}" fill="#f0eee7"/>`);labelLines.forEach((line,i)=>parts.push(text(line,44,overviewY+19+i*17,i?10:12)));
+   cellTexts.forEach(({row,lines},i)=>{const x=332+i*reviewWidth;parts.push(`<g data-coverage-cell="${escape(row.target)}:${escape(perspective.id)}" data-state="${row.tone}" data-map-review-target="${escape(row.target)}" data-map-review-perspective="${escape(perspective.id)}" role="button" tabindex="0" aria-label="${escape(perspective.name+'：'+row.label)}"><title>${escape(JSON.stringify(row.record??{status:'unreviewed'}))}</title><rect x="${x}" y="${overviewY}" width="${reviewWidth-4}" height="${rowHeight-3}" rx="3" fill="${colors[row.tone]}"/>`);lines.forEach((line,j)=>parts.push(text(line,x+10,overviewY+19+j*17,j?11:12)));parts.push('</g>');});overviewY+=rowHeight;
+  }
+  overviewY+=28;
+ }
+ parts.push('</g>');
+ if(completeness.unassigned.length){parts.push(text('対象との対応が未整理 — 要素を消さずに残しています',32,overviewY,16));overviewY+=24;for(const entity of completeness.unassigned)overviewY=nameLink(entity,44,overviewY,900)+4;overviewY+=20;}
+ const top=overviewY+24,ys=modelMapLanes.map(()=>top+65);
+ parts.push(`<g data-map-section="entities">${text('全要素の設計 — 属性・判断・関係を同じマップで確認',32,top,19)}</g>`);
+ modelMapLanes.forEach((lane,i)=>parts.push(text(lane.title,32+i*340,top+38,16)));
  for(const node of projection.nodes){
   const e=node.entity,x=32+node.lane*340,y=ys[node.lane],expanded=!node.boundary&&(!!options.expanded||!!options.expandedIds?.includes(e.id)),showReviews=!node.boundary&&(!!options.perspective||!!options.reviewTargetIds?.includes(e.id)||!!options.expanded);
   const body:string[]=[];let cy=y+24;
@@ -69,21 +122,19 @@ export function renderModelMap(model:Model,options:ModelMapOptions={}){
   const connected=visibleEdges.filter(({edge})=>edge.from===e.id||edge.to===e.id);
   const supporting=visibleReviewLinks.filter(l=>l.target===e.id||l.to===e.id);
   body.push(text(`関係 ${connected.length+supporting.length}件${!model.edges.some(r=>r.to===e.id&&r.relation==='has')&&['capability','behavior','scenario','quality'].includes(e.kind)?' · 所属未定':''}`,x+12,cy,11));cy+=23;
-  const grouped=new Map<string,number>();for(const {edge}of connected){const key=`${edge.from===e.id?'→':'←'} ${relationName(edge.relation)}`;grouped.set(key,(grouped.get(key)??0)+1);}
-  if(supporting.length)grouped.set('addresses（観点の根拠）',supporting.length);
-  for(const line of wrapText([...grouped].map(([key,n])=>`${key} ${n}`).join(' / ')||'このレイヤーの関係なし',270,11)){body.push(text(line,x+12,cy,11));cy+=17;}
-  const relationsExpanded=!!options.relationTargetIds?.includes(e.id)||expanded;
-  body.push(action(relationsExpanded?'関係カードを閉じる':`関係カードを開く (${connected.length+supporting.length})`,x+12,cy+8,`data-map-relations="${escape(e.id)}"`,276));cy+=42;
-  if(relationsExpanded)for(const {edge,index}of connected){
-   const other=edge.from===e.id?edge.to:edge.from;
-   body.push(`<g data-map-edge="${index}" role="button" tabindex="0" aria-label="${escape(edge.relation+' '+other)}">`);
-   for(const line of wrapText(`${edge.from===e.id?'→':'←'} ${relationName(edge.relation)}: ${other}`,270,11)){body.push(text(line,x+12,cy,11,'#137f88'));cy+=17;}
-   if(edge.id){const connection=model.connections.find(c=>c.id===edge.id);if(connection)for(const [k,v]of Object.entries(connection))for(const line of wrapText(`${k}: ${stringify(v)}`,270,11)){body.push(text(line,x+12,cy,11));cy+=17;}}
-   body.push('</g>');body.push(action('接続先へ移動',x+12,cy+8,`data-map-reveal="${escape(other)}"`,276));cy+=40;
+  // Named relationships remain visible; no generic navigation/card controls.
+  for(const {edge,index}of connected){
+   const other=edge.from===e.id?edge.to:edge.from,otherEntity=model.entities.find(n=>n.id===other)!;
+   body.push(text(`${edge.from===e.id?'→':'←'} ${relationName(edge.relation)}`,x+12,cy,11));cy+=17;
+   body.push(`<g data-map-reveal="${escape(other)}" role="button" tabindex="0" aria-label="${escape(otherEntity.name+'の設計を表示')}">`);
+   for(const line of wrapText(`${otherEntity.name} (${other})`,270,11)){body.push(text(line,x+12,cy,11,'#126a83'));cy+=17;}body.push('</g>');cy+=8;
+   if(expanded){body.push(action('関係を編集',x+12,cy+8,`data-map-edge="${index}"`,132));cy+=40;
+    if(edge.id){const connection=model.connections.find(c=>c.id===edge.id);if(connection)for(const [k,v]of Object.entries(connection))for(const line of wrapText(`${k}: ${stringify(v)}`,270,11)){body.push(text(line,x+12,cy,11));cy+=17;}}
+   }
   }
-  if(relationsExpanded)for(const link of supporting){const other=link.target===e.id?link.to:link.target;
-   for(const line of wrapText(`addresses: ${link.perspective} → ${other}`,270,11)){body.push(text(line,x+12,cy,11));cy+=17;}
-   body.push(action('判断と根拠を確認',x+12,cy+8,`data-map-review-target="${escape(link.target)}" data-map-review-perspective="${escape(link.perspective)}"`,132),action('接続先へ移動',x+154,cy+8,`data-map-reveal="${escape(other)}"`,134));cy+=42;
+  for(const link of supporting){const other=link.target===e.id?link.to:link.target;
+   for(const line of wrapText(`addresses: ${link.perspective}`,270,11)){body.push(text(line,x+12,cy,11));cy+=17;}
+   body.push(`<g data-map-reveal="${escape(other)}" role="button" tabindex="0" aria-label="${escape(other)}">`);for(const line of wrapText(model.entities.find(n=>n.id===other)!.name+` (${other})`,270,11)){body.push(text(line,x+12,cy,11,'#126a83'));cy+=17;}body.push('</g>');cy+=10;
   }
   if(node.reviews.length){
    const concluded=node.reviews.filter(r=>r.record&&['applicable','not_applicable','deferred'].includes(r.status)&&!r.gaps.length).length;
