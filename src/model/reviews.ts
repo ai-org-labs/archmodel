@@ -4,6 +4,14 @@ import type {DesignReview,Diagnostic,Model,ReviewPerspective,ReviewStatus} from 
 export const reviewStatuses=schema.$defs.designReview.properties.status.enum as ReviewStatus[];
 export const reviewStatusLabels:Record<ReviewStatus,string>={unreviewed:'未検討',in_review:'検討中',applicable:'対象',not_applicable:'対象外',deferred:'保留'};
 export const defaultReviewCatalog:readonly ReviewPerspective[]=[
+ {id:'behavior_specification',name:'振る舞い・入出力',description:'入力、開始条件、結果と業務ルールを具体化する'},
+ {id:'scenario_coverage',name:'シナリオ・境界条件',description:'正常系、失敗、境界条件を具体例で確認する'},
+ {id:'contracts',name:'契約・インターフェース',description:'API、イベント、外部契約と利用・提供者を確認する'},
+ {id:'logical_responsibilities',name:'論理責務',description:'要求を実現するComponentと責務分担を確認する'},
+ {id:'technical_realization',name:'技術実現',description:'実装・実行環境と論理責務の対応を確認する'},
+ {id:'verification_evidence',name:'検証・証跡',description:'何をどの方法で保証し、結果と証跡を残すか確認する'},
+ {id:'policies',name:'制約・ポリシー',description:'守るべき規則と適用対象を確認する'},
+ {id:'design_decisions',name:'方式判断・代替案',description:'採用理由、代替案、トレードオフと影響対象を確認する'},
  {id:'system_boundary',name:'システム境界',description:'管理対象、対象外、責任分界を確認する'},
  {id:'actors',name:'利用者・権限',description:'利用者と操作権限、管理者との違いを確認する'},
  {id:'data_lifecycle',name:'データの責任とライフサイクル',description:'正本、所有者、保存、削除を確認する'},

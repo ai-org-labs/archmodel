@@ -55,7 +55,7 @@ describe('conversation planning', () => {
   m.edges = m.edges.filter(e => !(e.from === 'auth-service' && e.relation === 'implementedBy'));
   expect(planNextQuestions(m).phase).toBe('realization');
   expect(planNextQuestions(sample()).phase).toBe('assurance');
-  expect(planNextQuestions(sample()).primary).toBeNull();
+  expect(planNextQuestions(sample()).primary?.code).toMatch(/^REVIEW_UNREVIEWED:/);
  });
  it('respects explicit deep focus and overview suppression', () => {
   const m = draft();

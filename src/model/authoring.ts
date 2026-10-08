@@ -116,3 +116,22 @@ export function suggestReviewId(model:Model,target:string,perspective:string):st
  const occupied=new Set([...model.entities.map(e=>e.id),...model.connections.map(e=>e.id),...(model.reviews??[]).map(r=>r.id)]);
  const base=`review-${target}-${perspective}`;let id=base,n=1;while(occupied.has(id))id=`${base}-${n++}`;return id;
 }
+
+/** Contextual map editors preserve the rest of the canonical document. */
+export function saveDocumentMetadata(source:string,data:Record<string,unknown>):string{
+ const model=checked(source);const allowed=['version','extensions','review_catalog','review_scopes'];
+ if(Object.keys(data).some(k=>!allowed.includes(k)))throw new Error('文書情報以外の項目は編集できません');
+ for(const key of allowed){if(data[key]===undefined)delete model.source[key];else model.source[key]=data[key];}
+ return encode(model.source);
+}
+export function saveArchitectureConnection(source:string,data:Record<string,unknown>,existingId?:string):string{
+ const model=checked(source),raw=model.source,relations=(raw.relations??[]) as Record<string,unknown>[];
+ if(existingId){const i=relations.findIndex(r=>r.id===existingId);if(i<0||data.id!==existingId)throw new Error('接続IDを変更できません');relations[i]=data;}
+ else relations.push(data);
+ raw.relations=relations;return encode(raw);
+}
+export function removeModelEdge(source:string,index:number):string{
+ const model=checked(source),edge=model.edges[index];if(!edge)throw new Error('関係が見つかりません');
+ model.edges=model.edges.filter((_,i)=>i!==index);if(edge.id)model.connections=model.connections.filter(c=>c.id!==edge.id);
+ return encode(flatDocument(model.entities,model));
+}

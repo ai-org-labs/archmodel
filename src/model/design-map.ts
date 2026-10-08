@@ -1,3 +1,4 @@
+import {designCoverage} from './coverage.js';
 import schema from '../../schema/archmodel.schema.json';
 import {laneLabel,type LaneLanguage} from './lane-labels.js';
 import {fieldLabel,enumLabel,qualityCategories,qualityCategory,decisionCategories,policyCategories} from './presentation.js';
@@ -43,6 +44,8 @@ function qualitySummary(entity:Entity,language:LaneLanguage='en'):string{
 const listHeight=(items:Content[])=>items.reduce((sum,c)=>sum+c.height,0)+Math.max(0,items.length-1)*GAP;
 export function computeDesignMap(model:Model,options:DesignMapOptions={}):DesignMap{
  const label=(key:string)=>laneLabel(key,options.language);
+ const coverage=designCoverage(model);
+ const reviewLabel=(id:string)=>{const s=coverage.scopes.find(s=>s.target===id);return s?`${s.concluded}/${s.total} 結論あり · 未結論 ${s.total-s.concluded} · 保留 ${s.deferred}`:'未開始';};
  const errors=validateModel(model).filter(d=>d.severity==='error');
  if(errors.length)throw new Error(errors.map(d=>`${d.path}: ${d.message}`).join('\n'));
  const present=(...kinds:Kind[])=>model.entities.some(e=>kinds.includes(e.kind));
@@ -105,7 +108,7 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
  for(let i=0;i<x.length;i++)x[i]=PAD+widths.slice(0,i).reduce((sum,w)=>sum+w+GAP,0);
  const rowPlans=plans.map(p=>{
   const collapsed=!!p.cap&&!!options.collapsedCapabilityIds?.includes(p.cap.id);
-  const meta=content(metaW,'',p.cap?dataFields(p.cap,['actor','inputs','outputs','guarantees','constraints']):[['Capability','上位の能力を定義してください']]);
+  const meta=content(metaW,'',p.cap?[['観点の結論',reviewLabel(p.cap.id)],...dataFields(p.cap,['actor','inputs','outputs','guarantees','constraints'])]:[['Capability','上位の能力を定義してください']]);
   const title=content(capW-64,p.cap?.name??'未所属 / これから定義',[]);
   const attributes=Object.keys(qualityCategories);
   if(p.qualities.some(e=>!e.data.attribute))attributes.push('unspecified');
@@ -116,7 +119,7 @@ export function computeDesignMap(model:Model,options:DesignMapOptions={}):Design
   const h=Math.max(title.height+Math.max(meta.height,listHeight(p.behaviors.map(b=>({height:b.height,text:[]})))+listHeight(loose)+(loose.length?GAP:0))+PAD,Math.max(HEADER,qualityTitle.height)+qualityHeight+PAD,360);
   return {...p,meta,title,groups,loose,collapsed,height:collapsed?44:h};
  });
- const productCards=kind('product').map(e=>({e,c:content(widths[0]-PAD*2,e.name,dataFields(e,['purpose','primary_users','user_value','scope','out_of_scope','owner']))}));
+ const productCards=kind('product').map(e=>({e,c:content(widths[0]-PAD*2,e.name,[['観点の結論',reviewLabel(e.id)],...dataFields(e,['purpose','primary_users','user_value','scope','out_of_scope','owner'])])}));
  const sideFields:Partial<Record<Kind,string[]>>={policy:['rules'],decision:['category','decision','reason','trade_off'],component:['responsibilities','provides','consumes'],contract:['kind','specification'],realization:['service','location'],verification:['level','method','result'],evidence:['location','result']};
  const side=(entities:Entity[],col:number)=>entities.map(e=>{
   let fields:Array<[string,unknown]>=[['',e.kind==='realization'?e.data.kind:e.kind==='component'?e.data.kind:e.kind],...dataFields(e,sideFields[e.kind]??[]).filter(([,v])=>v!==undefined)];

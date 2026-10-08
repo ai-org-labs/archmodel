@@ -82,3 +82,17 @@ Landscapeで製品選定、RTO/RPO詳細、DBカラム、全Scenario、ディレ
 ## 各観点を検討した記録
 
 レビューする対象をreview_scopesで明示し、reviewsに適用要否を残します。未記入はunreviewed、確認中はin_reviewです。applicableはrationale・ownerと設計要素へのaddresses、not_applicableはrationale・owner・assumptions・revisit_when、deferredはrationale・owner・residual_risk・revisit_whenを記録します。根拠を捏造して全観点を対象外にしないでください。合意前の除外案はin_reviewとして扱います。保留は解決済みにせず、親の除外を子へ継承しません。必要な観点だけ実際のQuality等へ具体化し、カタログ全件を設計要素として生成しません。独自観点はreview_catalogへ追加できます。観点の判断完了を実装・検証完了と混同せず、変更時には前提と再検討条件を確認してください。
+
+## 観点から結論までの必須作業
+
+1. 設計開始時とProduct/Capability追加時に `archmodel coverage model.yaml` を実行し、未開始を含む全対象の観点を確認する。対象は自動列挙され、YAMLを暗黙更新しない。
+2. 今回扱う対象をreview_scopesへ追加する。`archmodel review-start model.yaml [target-id]` は更新後のYAMLを標準出力する。ID省略時は全Product/Capabilityと既存対象を開始する。出力を検証してから対象ファイルへ反映する。同じファイルへの直接リダイレクトで入力を消さない。
+3. `archmodel focus model.yaml target-id [perspective-id]` で対象の全フィールド、関連、範囲外への接続、診断を読む。観点指定時はそのaddressesに絞る。要素が存在するだけでは観点を検討済みにしない。関連が要求から実現・検証へつながるか確認する。
+4. 観点ごとに、回答と既存設計から適用要否を判断する。対象なら必要な設計要素と関係を具体化し、理由・owner・addressesを記録する。対象外なら具体的な理由・owner・成立する前提・再検討条件を記録する。今は決められない場合は確認中として未結論を残し、明示的に先送りする場合は理由・owner・残るリスク・再検討条件を伴う保留を提案する。合意前の除外や保留を確定しない。担当・リスク・証跡を捏造しない。
+5. 記録はreviewsに保存する。`archmodel review-set model.yaml record.json` は単一の検討記録を構造・参照検証して更新後のYAMLを返す。同一対象・観点の既存IDを維持する。根拠不足のDraftは保存できるが結論完了には数えない。
+6. `validate` と `coverage` と `plan --focus target-id` を再実行する。質問は1テーマずつ進め、未結論・保留をキューから消さない。Planner上のdeferは質問順序の調整であり、DSLに記録するdeferredという判断の代用にはならない。
+7. 区切りでは「未結論」「根拠の揃った保留」「解決済み」「実装・検証状態」を分けて報告する。未結論があれば設計完了と言わない。保留を含め結論が揃っても解決済みとは言わない。ユーザーが保存・終了を求めたら途中のDraftとして保存し、質問を止める。
+
+最低限の観点はProductと各Capabilityで個別に扱う。親での除外を子へ継承しない。契約、論理責務、技術実現、検証・証跡、制約、方式判断、振る舞い、シナリオも含め、品質以外の設計観点を飛ばさない。独自の業務観点はreview_catalogへ追加する。カタログの数を埋めるためだけの空の設計要素や一律の対象外理由は作らない。
+
+設計対象の前提や参照先が変わったら、対応する判断の根拠と再検討条件を照合し、判断が成立しなくなればin_reviewへ戻す。ツールは文章の意味や実際の合意を自動保証しないため、この判断はAgentが担当する。

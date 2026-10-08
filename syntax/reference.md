@@ -17,7 +17,7 @@ ArchModelは価値・振る舞い・品質・契約・論理責務・技術実�
 - `reviews`: 対象 `target` と観点 `perspective` ごとの判断。組み合わせは一意です。記録を作ると対象の検討を開始します。
 - `review_catalog`: 独自観点の追加定義（id / name / description）。組み込み観点は上書きできません。観点IDは設計要素IDとは別の名前空間です。
 
-組み込み観点は `system_boundary` / `actors` / `data_lifecycle` / `external_dependencies` / `assumptions` / `failure_modes` と、Quality.attributeの各値に `quality.` を付けたものです。品質要求を全種類作ることを求めるものではありません。
+組み込み観点は `behavior_specification` / `scenario_coverage` / `contracts` / `logical_responsibilities` / `technical_realization` / `verification_evidence` / `policies` / `design_decisions` / `system_boundary` / `actors` / `data_lifecycle` / `external_dependencies` / `assumptions` / `failure_modes` と、Quality.attributeの各値に `quality.` を付けたものです。品質要求を全種類作ることを求めるものではありません。
 
 | status | 意味 | 判断に必要な記録 |
 | --- | --- | --- |
@@ -46,7 +46,9 @@ reviews:
 
 観点の判断完了と、設計・実装・検証の完了は別です。対象外の記録で既存QualityやVerificationの不足を消しません。前提変更を自動判断しないため、変更時には担当者がrevisit_whenと照合します。UIでaddressesの参照先を削除すると、その記録をin_reviewへ戻します。
 
-Playgroundの「観点レビュー」で対象ごとに編集できます。CLIの `archmodel reviews model.yaml [target-id]` で集計と各観点の状態を取得できます。YAML・Markdown出力にも記録が残ります。
+Playgroundは全体マップを初期表示します。各要素の属性・関係・観点をその場で展開できます。観点を選ぶと判断と根拠を編集し、DSLへ保存します。対象または観点へ絞り込んでも同じ分類・要素表現を使い、範囲外への接続を残します。文書情報・独自観点・実接続の詳細もマップから編集できます。CLIの `archmodel reviews model.yaml [target-id]` で集計と各観点の状態を取得できます。YAML・Markdown出力にも記録が残ります。
+
+`archmodel coverage model.yaml [target-id]` は未開始も含むカバレッジを取得します。根拠の揃ったapplicable / not_applicable / deferredを「結論あり」と数え、deferredを除くものを「解決済み」と数えます。`archmodel focus model.yaml target-id [perspective-id]` は対象の設計内容・関連・範囲外接続を返します。これらは読み取り専用です。`review-start`と`review-set`は更新後YAMLを標準出力します。
 
 ## アーキテクチャの接続
 
@@ -210,8 +212,8 @@ Scenarioはtype / specification、Behaviorはuse_cases、Policyはrules、Decisi
 
 ## View
 
-7列の設計マップは価値から技術実現までを表示し、CapabilityとQualityの行を揃え、Behavior内にScenarioを配置します。ContractはComponent列で論理責務の契約として表示します。座標は意味モデルから自動生成します。
-`renderDesignMap(model, {expanded: true})`はGherkin本文付きSVG、`renderView(model, 'connections')`は実接続の構成図、`renderView(model, 'contracts')`は契約関係図です。元のarchitecture Viewは要求・Component・Realizationのトレーサビリティです。
+全体マップは6つの表示領域に全12種類の要素を配置します。所属と共有は意味付きの接続で表し、共有要素を複製しません。`projectModelMap`は全属性・関係・観点と境界を射影し、`renderModelMap`はそのSVGを生成します。`expanded`で全属性・観点、`documentExpanded`で文書情報を展開します。`focus`と`perspective`で対象・観点に絞れます。座標は意味モデルから自動生成しDSLへ保存しません。
+旧`renderDesignMap`は互換用の7列マップAPIです。`renderView(model, 'connections')`は実接続の構成図、`renderView(model, 'contracts')`は契約関係図です。元のarchitecture Viewは要求・Component・Realizationのトレーサビリティです。
 
 <!-- GENERATED FIELD TYPES -->
 

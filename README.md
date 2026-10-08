@@ -2,7 +2,7 @@
 
 ProductからCapability、Behavior、Scenario、Quality、Component、技術実現、検証までをつなぐYAML DSLと設計マップです。
 
-主画面は7つの縦列で設計全体を表示します。Capabilityの中にBehavior、その中にScenarioを置き、Qualityを対応するCapabilityと同じ行に揃えます。Product、Policy、Decision、Component、Realizationは全体を通した列です。
+主画面は全体マップです。価値・能力、振る舞い、品質・制約、責務・契約・判断、技術実現、検証・証跡の6領域に全要素を配置し、同じマップ内で属性・設計観点・判断根拠・関係を展開して編集できます。
 
 [archmap-mermaid](https://github.com/ai-org-labs/archmap-mermaid)から描画・配線・SVG基盤を引き継いだ独立リポジトリです。元リポジトリへの実行時依存はありません。DSLの意味モデルとレーン配置は新規実装です。
 
@@ -47,21 +47,18 @@ npm run dev
 
 [分担作成の手順とサンプル](docs/AUTHORING.md)には、各役割の作成分と統合後のモデルを用意しています。
 
-モデル本体は意味付きグラフです。UIは7レーンのDesign Mapに集約しています。関連線の深さ・方向・種類を指定でき、共有ノードは同じIDとして扱います。
+モデル本体は意味付きグラフです。全体・対象・観点への絞り込みは同じマップの射影です。共有ノードは同じIDの一つの実体として扱い、絞り込みでも範囲外への接続を残します。
 
 ## 設計マップ
 
-- 通常は概要表示。「本文を展開」でGherkin、Trigger、Outcomesなどの詳細をマップ上に表示。
-- 要素を選択すると本文・関連先を表示。関連する設計要素をハイライト。
-- 関連線は選択した要素について必要な場合だけ表示。
-- ポインタ中心の滑らかなピンチズーム・100%表示・全体表示・ドラッグ移動。通常のトラックパッドスクロールで上下左右へ移動。SVGも同じレーン構造で保存。
-- 共有Behaviorは各Capability内に配置し、Componentは同じIDのまま共有。内部モデルは多対多グラフを保持。
-- 未所属のBehavior / Scenario / Qualityは未所属行に表示し、未完成の入力を隠さない。
-- 検証結果unknownは「未実施」と表示。検証リンクとテスト成功を区別。
-
-- Capability / Behaviorは個別または一括で開閉。閉じたCapabilityには編集可能な品質要約を表示。
-- 要素の削除、作成・編集・関連付けのUndo / Redoに対応（履歴は再読み込みまで）。
-- 警告から入力や関連付けへ移動。検証は既存の割り当て・新規作成に対応。
+- 全要素と関係を配置し、各要素の「属性を展開」で全属性と関係の詳細を表示します。
+- 「観点」で未検討を含む観点を展開し、その観点を選んで判断・理由・前提・リスク・再検討条件を記録します。
+- 「絞る」「この観点に絞る」は同じマップを局所表示します。点線のカードは範囲外への接続です。
+- マップ内から関連する要素を作成し、参照を付けて保存できます。要素・関係・実接続・文書情報の編集は選択した対象から開きます。
+- 文書・観点定義を展開すると、version、extensions、検討範囲と観点カタログを確認できます。
+- 概要は読み取り可能な倍率で開きます。「全体表示」で全体を俯瞰し、「対象へ移動」で任意の要素へ移動できます。ピンチズーム、パン、100%表示にも対応します。
+- 結論ありには根拠の揃った保留を含みます。未解決・設計不足・検証結果は別に扱い、空欄を対象外とは扱いません。
+- SVG保存も同じ射影です。DSLにビューの座標・展開状態は保存しません。
 
 ## DSLと例
 
@@ -101,14 +98,14 @@ npm run cli -- matrix syntax/examples/design-map.archmodel.yaml
 ```
 
 ```js
-import {parseModel, validateModel, nextQuestion, renderDesignMap, traceWhy} from './dist/archmodel.js';
+import {parseModel, validateModel, nextQuestion, renderModelMap, traceWhy} from './dist/archmodel.js';
 const model = parseModel(yaml);
 console.log(validateModel(model), nextQuestion(model));
 console.log(traceWhy(model, 'auth-runtime'));
-const {svg, layout} = renderDesignMap(model, {expanded: false});
+const {svg, layout} = renderModelMap(model, {expanded: false});
 ```
 
-`computeDesignMap(model)`でレーン・要素の座標を取得できます。座標はView側で決まり、DSLへ追加しません。従来の`renderView`は補助図生成APIとして利用可能です。
+`projectModelMap(model)`で全体マップの射影、`renderModelMap(model)`でSVGを取得できます。旧`computeDesignMap` / `renderDesignMap`は互換用APIとして保持しています。座標はView側で決まり、DSLへ追加しません。従来の`renderView`は補助図生成APIとして利用可能です。
 CLIはmarkdown / yaml / json / backlog / directoriesにも対応。Jira候補やディレクトリ案はローカルの提案出力です。
 型定義は`src/index.ts`、スキーマは`schema/`にあります。npm公開はしていません。
 

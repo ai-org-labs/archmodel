@@ -96,3 +96,17 @@ Plannerはモデルを変更しません。InferもDraft案の提示であり自
 ## 観点の判断記録
 
 対象のreview_scopesを開始すると、記録のない観点は未検討として質問候補になります。reviewsで対象・対象外・保留と根拠を保存し、`archmodel reviews model.yaml [target-id]` で一覧を取得できます。独自観点はreview_catalogで追加します。未開始の既存文書には追加の観点警告を出しません。構文リファレンスの「観点の検討記録」に従い、対象外の理由や前提を推測で確定させず、未合意ならin_reviewにしてください。
+
+## 観点を結論へつなぐ操作
+
+必須の進行手順は[対話プロトコル](../prompts/conversational-design.md#観点から結論までの必須作業)を正本とします。
+
+```sh
+archmodel coverage model.yaml
+archmodel focus model.yaml capability-id contracts
+archmodel review-start model.yaml capability-id
+archmodel review-set model.yaml review-record.json
+archmodel plan model.yaml --focus capability-id
+```
+
+review-start / review-setは更新後のYAMLを標準出力します。出力を別の一時ファイルに保存・検証してから元のファイルへ反映してください。同じ入力ファイルへ直接リダイレクトしないでください。review-record.jsonにはDSLのreviewsの1件分を渡します。coverageは未開始のProduct/Capabilityも含むため、旧reviewsコマンドで記録がない場合も未結論が見えます。

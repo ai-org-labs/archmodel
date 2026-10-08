@@ -11,3 +11,6 @@ export * from './model/lane-labels.js';
 export { planNextQuestions } from './model/questioning.js';
 
 export * from './model/reviews.js';
+
+export * from './model/coverage.js';
+export * from './model/model-map.js';

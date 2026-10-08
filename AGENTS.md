@@ -16,3 +16,5 @@ ArchModel自体のコード修正を、システム設計の質問セッショ�
 具体的な開始・検証手順は[利用ガイド](docs/AGENT_USAGE.md)を参照する。
 実装済み範囲と将来APIは[設計書](docs/AGENT_DESIGN.md)を参照する。
 次質問の選択にはplanNextQuestionsまたはCLIのplanを利用する。会話履歴や回答の抽出はAgent側で扱う。
+
+設計作成・更新時はcoverageで未開始を含む設計観点を確認し、対象に絞ったfocusとplanを使う。判断・根拠・未結論・保留をDSLに残す必須手順は対話プロトコルに従う。要素の存在や検証warningの不在だけで設計完了としない。

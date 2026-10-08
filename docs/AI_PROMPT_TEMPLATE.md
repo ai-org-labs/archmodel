@@ -40,6 +40,10 @@
 
 レビューする対象をreview_scopesで明示し、reviewsに適用要否を残します。未記入はunreviewed、確認中はin_reviewです。applicableはrationale・ownerと設計要素へのaddresses、not_applicableはrationale・owner・assumptions・revisit_when、deferredはrationale・owner・residual_risk・revisit_whenを記録します。根拠を捏造して全観点を対象外にしないでください。合意前の除外案はin_reviewとして扱います。保留は解決済みにせず、親の除外を子へ継承しません。必要な観点だけ実際のQuality等へ具体化し、カタログ全件を設計要素として生成しません。独自観点はreview_catalogへ追加できます。観点の判断完了を実装・検証完了と混同せず、変更時には前提と再検討条件を確認してください。
 
+## 観点を結論へつなげる
+
+Productと各Capabilityについて、未開始も含む全観点を確認してください。ツールがあればcoverage → focus → planを使い、今回扱う対象のreview_scopesを開始します。各回答から設計内容・関係・reviewsを一緒に更新します。要素があるだけで適用判断済みとはみなしません。対象・対象外・保留の根拠を記録し、合意や情報が足りなければin_reviewとして次の確認事項を残します。未結論を一律の対象外で埋めないでください。最後に未結論、根拠の揃った保留、解決済み、実装・検証状態を分けて報告します。未結論があればDraft、保留があれば未解決として扱います。質問順序を後回しにすることと、DSL上の保留判断は別です。
+
 ## 出力
 
 1. 決まっている設計と重要な未決事項を短く説明してください。

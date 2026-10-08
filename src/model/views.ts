@@ -1,3 +1,4 @@
+import {designFocus,designCoverage} from './coverage.js';
 import {reviewRows,reviewScopeIds,reviewSummary} from './reviews.js';
 import { dump } from 'js-yaml';
 import { renderDiagram } from '../focused/render.js';
@@ -69,5 +70,20 @@ export function renderFocusMap(model:Model,id:string,scope:TraversalOptions={dep
  for(const [i,n]of right.entries())n.at=[Math.min(depth+2,4),i+1];
  const node=diagram.nodes.find(n=>n.id===id)!;node.at=[2,center];node.color='orange';
  diagram.title=`Focus · ${node.label}`;
+ return renderDiagram(diagram);
+}
+
+/** Focus is a projection of the same graph; boundary nodes remain explicit. */
+export function renderDesignFocusMap(model:Model,target:string,perspective?:string){
+ const focus=designFocus(model,target,perspective),boundary=new Set(focus.boundary.map(e=>e.id));
+ const projected={...model,entities:[...focus.entities,...focus.boundary],edges:focus.edges};
+ const diagram=projectView(projected,'impact');
+ diagram.title=`対象: ${model.entities.find(e=>e.id===target)!.name}${perspective?` / ${perspective}`:''}`;
+ for(const node of diagram.nodes){
+  if(boundary.has(node.id)){node.description=`範囲外への接続 · ${node.description}`;node.color='gray';}
+  else if(node.id===target)node.color='orange';
+  const entity=model.entities.find(e=>e.id===node.id)!;
+  if(['product','capability'].includes(entity.kind)){const c=designCoverage(model,node.id);node.description+=` · 観点 ${c.concluded}/${c.total} 結論あり`;}
+ }
  return renderDiagram(diagram);
 }

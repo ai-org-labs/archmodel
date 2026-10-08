@@ -1,20 +1,21 @@
+import {installMapEditors} from './map-editors.js';
 import {installReviews} from './reviews.js';
 import {examples,navigation,siteBase} from './content.js';
 import {guideMarkup,mountGuide} from './guide.js';
 import './playground.css';
-import {laneCopy,laneLabel,type LaneLanguage} from '@archmodel/core';
-import {fieldLabel,fieldLabels,relationLabels} from '@archmodel/core';
+import {laneLabel} from '@archmodel/core';
+import {fieldLabel,relationLabels} from '@archmodel/core';
 import {DocumentHistory} from './history.js';
 import {installAuthoring} from './authoring.js';
 import './site.css';
 import sample from '../syntax/examples/design-map.archmodel.yaml?raw';
 import bottomUp from '../syntax/examples/bottom-up.archmodel.yaml?raw';
-import {deleteEntity,parseModel,validateModel,nextQuestion,renderDesignMap,toMarkdown,availableLinks,linkEntities,connectionTypes,EMPTY_MODEL} from '@archmodel/core';
-import type {Model,TraversalOptions,Relation,Kind} from '@archmodel/core';
+import {deleteEntity,parseModel,validateModel,planNextQuestions,designCoverage,reviewRows,renderModelMap,toMarkdown,availableLinks,linkEntities,EMPTY_MODEL} from '@archmodel/core';
+import type {Model,Kind} from '@archmodel/core';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 document.body.innerHTML=`<header><div class="brand"><span class="brand-mark">A</span><strong>ArchModel</strong><span class="divider"></span><span class="workspace-name">Design map</span></div><nav><button id="new-model">新規作成</button><button id="add-element">＋ 要素</button><button id="load">開く</button><input type="file" id="file" accept=".yaml,.yml,.json" hidden><button id="save">YAML保存</button><button id="svg">SVG保存</button><button id="edit" class="primary" aria-expanded="false">〈 〉 DSLを編集</button></nav></header>
-<div class="map-toolbar"><div><h1 id="title">Customer Platform</h1><span id="summary" role="status"></span></div><div class="map-actions"><select id="lane-language" aria-label="レーンの表示言語"><option value="en">English</option><option value="ja">日本語</option></select><button id="scope-toggle">関連範囲</button><label class="relations"><input type="checkbox" id="expanded">本文を展開</label><label class="relations"><input type="checkbox" id="relations">選択した関連線</label><button id="checks" aria-label="設計の確認" title="設計の確認">設計の確認 <span id="issue-count">0</span></button><button id="help" aria-label="構文リファレンス">?</button></div></div>
+<div class="map-toolbar"><div><h1 id="title">Customer Platform</h1><span id="summary" role="status"></span></div><div class="map-actions"><select id="lane-language" aria-label="レーンの表示言語"><option value="en">English</option><option value="ja">日本語</option></select><button id="scope-toggle">関連範囲</button><label class="relations"><input type="checkbox" id="expanded">全属性・観点を展開</label><label class="relations"><input type="checkbox" id="relations">関連線を表示</label><button id="checks" aria-label="設計の確認" title="設計の確認">設計の確認 <span id="issue-count">0</span></button><button id="help" aria-label="構文リファレンス">?</button></div></div>
 <div id="scope-panel" hidden><label>深さ <input id="scope-depth" type="number" min="0" max="20" value="3"></label><label>方向 <select id="scope-direction"><option value="forward">順方向</option><option value="reverse">逆方向</option><option value="both">双方向</option></select></label><label>関連種別 <select id="scope-types"><option value="design">設計・実装・検証</option><option value="all">全ての意味付き関連</option><option value="architecture">システム接続</option><option value="contract">Contract</option><option value="policy">Policy / Decision</option></select></label></div><main><div id="link-prompt" hidden role="status"><span></span><button id="list-map-links">一覧から選ぶ</button><button id="cancel-map-link">キャンセル</button></div><section id="canvas" tabindex="0" aria-label="設計マップ。ドラッグで移動、要素を選択して詳細を確認"><div id="drawing"></div></section><div class="map-legend"><span class="legend-neutral">設計要素</span><span class="legend-accent">選択・関連</span></div><div class="zoom-controls"><button id="zoom-out" aria-label="縮小">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="拡大">＋</button><button id="fit">全体表示</button><button id="actual">100%</button></div><div id="empty-error" hidden></div></main>
 <footer><span>Product → Capability → Behavior → Scenario</span><span>要素を選択すると、品質・設計・実装まで辿れます</span><div><span id="merge-result" role="status"></span><button id="restore-work" hidden>前の作業に戻る</button><button id="merge-open">YAMLを追加</button><input id="merge-file" type="file" accept=".yaml,.yml" hidden><button id="example">設計サンプル</button><button id="bottom">既存システムから</button></div></footer>
 <aside id="editor-panel" class="panel editor-panel" hidden><div class="panel-head"><div><small>SOURCE OF TRUTH</small><h2>Design Model</h2><button id="reload-example" type="button">最新のExampleに戻す</button></div><button id="close-editor" aria-label="エディタを閉じる">×</button></div><p class="panel-note">YAMLの内容が、そのまま設計マップに展開されます。</p><label for="source" class="sr-only">ArchModel DSL</label><textarea id="source" spellcheck="false" wrap="off"></textarea><div class="panel-bottom"><span id="storage">変更は自動保存されます</span><button id="markdown">Markdown保存</button><button id="json">JSON保存</button></div></aside>
@@ -34,8 +35,9 @@ function headerMenu(label:string,ids:string[],className:string){
  for(const id of ids){const control=el(id);body.append(control.matches('input[type="checkbox"]')?control.closest('label')!:control);}
  menu.append(body);workspaceTools.append(menu);return menu;
 }
-headerMenu('表示設定',['lane-language','expanded','relations','scope-toggle'],'display-menu');
-workspaceTools.insertAdjacentHTML('beforeend','<button id="open-reviews">観点レビュー</button>');
+el('lane-language').remove();el('scope-toggle').remove();el('scope-panel').remove();
+headerMenu('表示設定',['expanded','relations'],'display-menu');
+workspaceTools.insertAdjacentHTML('beforeend','<button id="open-coverage">観点を展開</button><button id="open-map">全体マップ</button><button id="open-reviews">観点レビュー</button>');
 workspaceTools.append(el('checks'),el('edit'));
 headerMenu('ファイル',['new-model','add-element','load','file','save','svg','help'],'file-menu');
 workspaceTools.querySelector('#edit')!.textContent='〈 〉 DSL';
@@ -54,17 +56,18 @@ document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>{
 document.addEventListener('pointerdown',event=>{if(!(event.target as Element).closest('.header-menu'))document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>menu.open=false);});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>menu.open=false);});
 const editor=el<HTMLTextAreaElement>('source');let model:Model=parseModel(EMPTY_MODEL);let selectedId='';let svg='';let size={width:2200,height:1200};let scale=1;let autoFit=true;let offsetX=24,offsetY=24,targetScale=1,zoomFrame=0;let zoomAnchor={x:0,y:0};let timer:ReturnType<typeof setTimeout>;let dragged=false;
+const expandedMapIds=new Set<string>();
+const reviewMapTargets=new Set<string>();
+let documentExpanded=false;
+let mapFocusId='';
+let mapPerspective='';
+const mapContext=document.createElement('div');mapContext.id='map-context';document.querySelector('main')!.before(mapContext);
 let linkingFrom='';
-let qualitySummaryEditingId='';
 const collapsedCapabilities=new Set<string>();
 const collapsedBehaviors=new Set<string>();
-const foldingActions=document.createElement('div');foldingActions.className='folding-actions';
-for(const [label,collapse]of [['すべてのCapabilityを閉じる',true],['すべてのCapabilityを開く',false]] as const){const button=document.createElement('button');button.textContent=label;button.onclick=()=>{collapsedCapabilities.clear();if(collapse)model.entities.filter(e=>e.kind==='capability').forEach(e=>collapsedCapabilities.add(e.id));draw();};foldingActions.append(button);}
-for(const [label,collapse]of [['すべてのBehaviorを閉じる',true],['すべてのBehaviorを開く',false]] as const){const button=document.createElement('button');button.textContent=label;button.onclick=()=>{collapsedCapabilities.clear();collapsedBehaviors.clear();if(collapse)model.entities.filter(e=>e.kind==='behavior').forEach(e=>collapsedBehaviors.add(e.id));draw();};foldingActions.append(button);}
-document.querySelector('.display-menu .header-menu-body')!.append(foldingActions);
-try{el<HTMLSelectElement>('lane-language').value=localStorage.getItem('archmodel:lane-language')==='ja'?'ja':'en';}catch{}
 const storageKey=selectedExample?`archmodel:playground:${selectedExample.id}:v0.1`:'archmodel:canonical:v0.1';
 try{editor.value=localStorage.getItem(storageKey)??selectedExample?.source??sample;}catch{editor.value=selectedExample?.source??sample;el('storage').textContent='下書きを保存できません。YAML保存をご利用ください。';}
+el<HTMLInputElement>('relations').checked=true;
 const documentHistory=new DocumentHistory(editor.value);
 function syncHistory(){el<HTMLButtonElement>('undo').disabled=!documentHistory.canUndo&&editor.value===documentHistory.current;el<HTMLButtonElement>('redo').disabled=!documentHistory.canRedo||editor.value!==documentHistory.current;}
 function commitEditor(){clearTimeout(timer);documentHistory.record(editor.value);syncHistory();}
@@ -72,6 +75,8 @@ function save(name:string,text:string,type='text/plain'){const url=URL.createObj
 function applyScale(){const drawing=el('drawing');drawing.style.transform=`translate(${offsetX}px,${offsetY}px) scale(${scale})`;el('zoom').textContent=`${Math.round(scale*100)}%`;}
 function stopZoom(){cancelAnimationFrame(zoomFrame);zoomFrame=0;targetScale=scale;}
 function fit(){stopZoom();const canvas=el('canvas');scale=Math.max(.1,Math.min(1,(canvas.clientWidth-48)/size.width,(canvas.clientHeight-48)/size.height));targetScale=scale;offsetX=(canvas.clientWidth-size.width*scale)/2;offsetY=(canvas.clientHeight-size.height*scale)/2;autoFit=true;applyScale();}
+function readableFit(){stopZoom();const canvas=el('canvas');scale=Math.max(.7,Math.min(1,(canvas.clientWidth-48)/size.width));targetScale=scale;offsetX=24;offsetY=24;applyScale();}
+function revealNode(id:string){const node=el('drawing').querySelector<SVGGElement>(`[data-node="${CSS.escape(id)}"]`);if(!node)return;stopZoom();const box=node.getBBox();scale=1;targetScale=1;offsetX=24-box.x;offsetY=24-box.y;autoFit=false;applyScale();}
 function animateZoom(){const next=Math.abs(targetScale-scale)<.0001?targetScale:scale+(targetScale-scale)*.28;const ratio=next/scale;offsetX=zoomAnchor.x-(zoomAnchor.x-offsetX)*ratio;offsetY=zoomAnchor.y-(zoomAnchor.y-offsetY)*ratio;scale=next;applyScale();zoomFrame=scale===targetScale?0:requestAnimationFrame(animateZoom);}
 function zoomTo(value:number,x=el('canvas').clientWidth/2,y=el('canvas').clientHeight/2){autoFit=false;targetScale=Math.max(.1,Math.min(4,value));zoomAnchor={x,y};if(!zoomFrame)zoomFrame=requestAnimationFrame(animateZoom);}
 
@@ -79,23 +84,29 @@ function select(id:string,preserveFolding=false){
  const ancestors=new Set([id]);let changed=true;while(changed){changed=false;for(const edge of model.edges)if(edge.relation==='has'&&ancestors.has(edge.to)&&!ancestors.has(edge.from)){ancestors.add(edge.from);changed=true;}}
  for(const ancestor of ancestors)if(ancestor!==id&&!preserveFolding){collapsedCapabilities.delete(ancestor);collapsedBehaviors.delete(ancestor);}
  selectedId=id;el('inspector').hidden=false;el('check-panel').hidden=true;inspect();draw(false);}
-function traversalScope():TraversalOptions{
- const types:Record<string,Relation[]>={all:['has','realizedBy','implementedBy','verifiedBy','appliesTo','affects','evidencedBy','uses','provides','consumes',...connectionTypes],design:['has','realizedBy','implementedBy','verifiedBy','uses','provides','consumes'],architecture:[...connectionTypes],contract:['uses','provides','consumes','verifiedBy'],policy:['appliesTo','affects']};
- return {depth:Math.max(0,Math.min(20,Math.floor(Number(el<HTMLInputElement>('scope-depth').value)||0))),direction:el<HTMLSelectElement>('scope-direction').value as 'forward'|'reverse'|'both',relationTypes:types[el<HTMLSelectElement>('scope-types').value]};
-}
 function inspect(){
  const entity=model.entities.find(e=>e.id===selectedId);if(!entity){el('inspector').hidden=true;return;}
  el('detail-kind').textContent=entity.kind;el('detail-title').textContent=entity.name;
- const fields=Object.entries(entity.data).filter(([key])=>fieldLabels[key]&&key!=='name');
+ const fields=Object.entries(entity.data);
  const edges=model.edges.filter(e=>e.from===entity.id||e.to===entity.id);
- el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button><button data-review-target="${escape(entity.id)}">観点レビュー</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。子要素はマップの＋で追加できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(fieldLabel(key,entity.kind))}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
+ el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button><button data-map-focus="${escape(entity.id)}">マップをこの対象に絞る</button><button data-map-reviews="${escape(entity.id)}">この対象の設計観点</button><button data-review-target="${escape(entity.id)}">観点レビュー</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。関連する要素はマップ内の追加ボタンから作成できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(fieldLabel(key,entity.kind))}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
 }
 
 function draw(refit=true){
  svg='';const errors=validateModel(model).filter(d=>d.severity==='error');
  el('empty-error').hidden=!errors.length;
  if(errors.length){el('drawing').replaceChildren();el('empty-error').textContent='DSLにエラーがあります。設計の確認から該当箇所を修正してください。';el<HTMLButtonElement>('svg').disabled=true;return;}
- const result=renderDesignMap(model,{collapsedCapabilityIds:[...collapsedCapabilities],collapsedBehaviorIds:[...collapsedBehaviors],language:el<HTMLSelectElement>('lane-language').value as LaneLanguage,scope:traversalScope(),selectedId,showRelations:el<HTMLInputElement>('relations').checked,expanded:el<HTMLInputElement>('expanded').checked});svg=result.svg;size=result.layout;el('drawing').innerHTML=svg;addMapControls();el<HTMLButtonElement>('svg').disabled=false;if(refit&&autoFit)fit();else applyScale();
+ if(mapFocusId&&!model.entities.some(e=>e.id===mapFocusId)){mapFocusId='';mapPerspective='';}
+ if(mapFocusId&&mapPerspective&&!reviewRows(model,mapFocusId).some(r=>r.perspective.id===mapPerspective))mapPerspective='';
+ const c=designCoverage(model,mapFocusId||undefined);
+ const reviewNavigationTarget=selectedId||mapFocusId;
+ const reviewNavigation=reviewNavigationTarget?`<label>観点へ移動 <select id="map-review-jump"><option value="">選択</option>${reviewRows(model,reviewNavigationTarget).map(r=>`<option value="${escape(r.perspective.id)}">${escape(r.perspective.name)} / ${r.status}</option>`).join('')}</select></label>`:'';
+ mapContext.innerHTML=`<strong>${mapFocusId?`全体マップ → ${escape(model.entities.find(e=>e.id===mapFocusId)!.name)}${mapPerspective?' → '+escape(mapPerspective):''}`:'全体マップ'}</strong><span>観点：${c.concluded}/${c.total} 結論あり · 未結論 ${c.unconcluded}</span><label>対象へ移動 <select id="map-jump"><option value="">選択</option>${model.entities.map(e=>`<option value="${escape(e.id)}">${escape(e.name)} / ${e.kind}</option>`).join('')}</select></label>${reviewNavigation}<button id="expand-scope-reviews">この範囲の観点を展開</button><button id="edit-map-document">文書・観点定義</button><button id="add-map-connection">実接続を追加</button>${mapFocusId?'<button id="clear-map-focus">全体へ戻る</button>':''}`;
+ el<HTMLSelectElement>('map-jump').onchange=()=>{const id=el<HTMLSelectElement>('map-jump').value;if(!id)return;if(!el('drawing').querySelector(`[data-node="${CSS.escape(id)}"]`)){mapFocusId='';mapPerspective='';draw(false);}select(id);revealNode(id);};
+ const reviewJump=el<HTMLSelectElement>('map-review-jump');if(reviewJump)reviewJump.onchange=()=>{const perspective=reviewJump.value;if(!perspective)return;mapPerspective='';reviewMapTargets.add(reviewNavigationTarget);draw(false);const node=el('drawing').querySelector<SVGGElement>(`[data-map-review-target="${CSS.escape(reviewNavigationTarget)}"][data-map-review-perspective="${CSS.escape(perspective)}"]`);if(node){const box=node.getBBox();stopZoom();scale=1;targetScale=1;offsetX=24-box.x;offsetY=24-box.y;autoFit=false;applyScale();}};
+ const clear=el('clear-map-focus');if(clear)clear.onclick=()=>{mapFocusId='';mapPerspective='';autoFit=true;draw();};
+ const result=renderModelMap(model,{focus:mapFocusId||undefined,perspective:mapPerspective||undefined,selectedId,expandedIds:[...expandedMapIds],reviewTargetIds:[...reviewMapTargets],documentExpanded,expanded:el<HTMLInputElement>('expanded').checked,showRelations:el<HTMLInputElement>('relations').checked});svg=result.svg;size=result.layout;el('drawing').innerHTML=svg;el<HTMLButtonElement>('svg').disabled=false;if(refit&&autoFit)readableFit();else applyScale();
+
 }
 function update(){
  model=parseModel(editor.value);const diagnostics=validateModel(model),errors=diagnostics.filter(d=>d.severity==='error');
@@ -103,31 +114,30 @@ function update(){
  el('title').textContent=model.entities.filter(e=>e.kind==='product').map(e=>e.name).join(' / ')||'これから定義するProduct';
  el('summary').textContent=`${model.entities.filter(e=>e.kind==='capability').length} capabilities · ${model.entities.filter(e=>e.kind==='behavior').length} behaviors · ${model.entities.filter(e=>e.kind==='scenario').length} scenarios`;
  el('issue-count').textContent=String(diagnostics.length);el('checks').classList.toggle('has-errors',errors.length>0);
- el('question').textContent=errors.length?'まず構文・参照エラーを修正してください。':nextQuestion(model)?.text??'設計の基本項目は揃っています。検証結果と証跡を確認できます。';
+ el('question').textContent=errors.length?'まず構文・参照エラーを修正してください。':planNextQuestions(model).primary?.message??'今のフェーズで提示する質問はありません。未結論・保留と検証結果を設計観点で確認してください。';
  el('diagnostics').innerHTML=diagnostics.length?diagnostics.map(d=>`<div class="diagnostic ${d.severity}"><strong>${escape(d.code)}</strong><p>${escape(d.message)}</p><small>${escape(d.path)}</small>${d.entityId&&d.code==='UNCOVERED'?`<button data-assign-verification="${escape(d.entityId)}">検証を割り当てる</button>`:''}${d.code!=='UNCOVERED'?`<button data-fix-code="${escape(d.code)}" data-fix-entity="${escape(d.entityId??'')}" data-fix-field="${escape(d.field??'')}">${d.code==='MISSING_FIELD'||d.code==='INVALID_GHERKIN'||d.code==='PUBLIC_AUTH'?'入力する':'対応する'}</button>`:''}${d.entityId?`<button data-select="${escape(d.entityId)}">要素を確認</button>`:''}</div>`).join(''):'<p>不足・孤立・参照切れは検出されませんでした。</p>';
  for(const id of ['json','markdown'])el<HTMLButtonElement>(id).disabled=!!errors.length;
  draw();if(selectedId)inspect();try{localStorage.setItem(storageKey,editor.value);}catch{el('storage').textContent='下書き保存に失敗しました。YAML保存をご利用ください。';}
 }
 function openEditor(){el('editor-panel').hidden=false;el('edit').setAttribute('aria-expanded','true');if(autoFit)requestAnimationFrame(fit);}
 function closeEditor(){el('editor-panel').hidden=true;el('edit').setAttribute('aria-expanded','false');if(autoFit)requestAnimationFrame(fit);}
-function newSource(source:string,record=true){el('merge-result').textContent='';if(record){commitEditor();documentHistory.record(source);}cancelMapLink();clearTimeout(timer);editor.value=source;selectedId='';autoFit=true;el('inspector').hidden=true;update();syncHistory();}
+function newSource(source:string,record=true){el('merge-result').textContent='';if(record){commitEditor();documentHistory.record(source);}cancelMapLink();clearTimeout(timer);editor.value=source;autoFit=true;el('inspector').hidden=true;update();syncHistory();}
 editor.addEventListener('input',()=>{clearTimeout(timer);syncHistory();timer=setTimeout(()=>{commitEditor();update();},400);});
 function travelHistory(redo=false){commitEditor();newSource(redo?documentHistory.redo():documentHistory.undo(),false);}
 el('undo').onclick=()=>travelHistory();el('redo').onclick=()=>travelHistory(true);
 document.addEventListener('keydown',event=>{if(!(event.metaKey||event.ctrlKey)||event.altKey||document.querySelector('dialog[open]')||(event.target as Element).closest('input,textarea,select,[contenteditable="true"]'))return;const key=event.key.toLowerCase();if(key==='z'||key==='y'){event.preventDefault();travelHistory(key==='y'||event.shiftKey);}});
 el('edit').onclick=()=>el('editor-panel').hidden?openEditor():closeEditor();el('close-editor').onclick=closeEditor;
-el('close-inspector').onclick=()=>{selectedId='';el('inspector').hidden=true;draw(false);};
+el('close-inspector').onclick=()=>{el('inspector').hidden=true;draw(false);};
 el('checks').onclick=()=>{el('check-panel').hidden=!el('check-panel').hidden;el('inspector').hidden=true;};el('close-checks').onclick=()=>el('check-panel').hidden=true;
 el('reload-example').onclick=()=>{if(confirm('編集中の内容を最新のExampleに置き換えます。必要な内容はYAML保存してください。'))newSource(selectedExample?.source??sample);};
 el('example').onclick=()=>{if(editor.value===sample||confirm('現在のモデルを設計サンプルに置き換えますか？必要な変更はYAML保存してください。'))newSource(sample);};el('bottom').onclick=()=>{if(confirm('既存システムから始めるサンプルに切り替えますか？'))newSource(bottomUp);};
-el('scope-toggle').onclick=()=>{el('scope-panel').hidden=!el('scope-panel').hidden;};for(const id of ['scope-depth','scope-direction','scope-types'])el(id).onchange=()=>draw(false);
 el('relations').onchange=()=>draw(false);el('expanded').onchange=()=>{autoFit=true;draw();};
 el('zoom-in').onclick=()=>zoomTo((zoomFrame?targetScale:scale)*1.25);el('zoom-out').onclick=()=>zoomTo((zoomFrame?targetScale:scale)/1.25);el('fit').onclick=fit;el('actual').onclick=()=>zoomTo(1);
-window.addEventListener('resize',()=>{if(autoFit)fit();});
+window.addEventListener('resize',()=>{if(autoFit)readableFit();});
 document.addEventListener('click',e=>{if(dragged){dragged=false;return;}if((e.target as Element).closest('[data-create-kind]'))return;const target=(e.target as Element).closest<HTMLElement>('[data-node],[data-select]');if(target){const id=target.dataset.node??target.dataset.select!;if(linkingFrom)completeMapLink(id);else select(id);}});
 el('canvas').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const node=(e.target as Element).closest<HTMLElement>('[data-node]');if(node){e.preventDefault();if(linkingFrom)completeMapLink(node.dataset.node!);else select(node.dataset.node!);}}});
 let pan:{x:number;y:number;left:number;top:number;pointerId:number}|undefined;
-el('canvas').addEventListener('pointerdown',e=>{if(e.button!==0||(e.target as Element).closest('button,.lane-help'))return;stopZoom();pan={x:e.clientX,y:e.clientY,left:offsetX,top:offsetY,pointerId:e.pointerId};dragged=false;});
+el('canvas').addEventListener('pointerdown',e=>{if(e.button!==0||(e.target as Element).closest('button,.lane-help,[data-map-expand],[data-map-reviews],[data-map-review-target],[data-map-edit],[data-map-focus],[data-map-add]'))return;stopZoom();pan={x:e.clientX,y:e.clientY,left:offsetX,top:offsetY,pointerId:e.pointerId};dragged=false;});
 window.addEventListener('pointermove',e=>{if(!pan||pan.pointerId!==e.pointerId)return;const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(dragged||Math.abs(dx)+Math.abs(dy)>4){dragged=true;autoFit=false;offsetX=pan.left+dx;offsetY=pan.top+dy;el('canvas').setPointerCapture(e.pointerId);applyScale();}});
 const endPan=()=>{pan=undefined;setTimeout(()=>dragged=false,0);};window.addEventListener('pointerup',endPan);window.addEventListener('pointercancel',endPan);
 el('canvas').addEventListener('wheel',e=>{e.preventDefault();const unit=e.deltaMode===1?16:e.deltaMode===2?el('canvas').clientHeight:1;if(e.ctrlKey||e.metaKey){const rect=el('canvas').getBoundingClientRect();zoomTo((zoomFrame?targetScale:scale)*Math.exp(-e.deltaY*unit*.008),e.clientX-rect.left,e.clientY-rect.top);}else{stopZoom();autoFit=false;offsetX-=e.deltaX*unit;offsetY-=e.deltaY*unit;applyScale();}},{passive:false});
@@ -139,9 +149,32 @@ el('guide-content').innerHTML=guideMarkup();mountGuide(el('reference'));el('help
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]')){cancelMapLink();closeEditor();el('check-panel').hidden=true;el('inspector').hidden=true;selectedId='';draw(false);}});update();
 
 const reviewUI=installReviews({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource});
-el('open-reviews').onclick=()=>reviewUI.open(selectedId||undefined);
+el('open-reviews').onclick=()=>reviewUI.open(selectedId||mapFocusId||undefined);
+el('open-coverage').onclick=()=>{const targets=selectedId?[selectedId]:designCoverage(model,mapFocusId||undefined).scopes.map(s=>s.target);for(const id of targets)reviewMapTargets.add(id);draw(false);};
+el('open-map').onclick=()=>{mapFocusId='';mapPerspective='';autoFit=true;draw();};
+const mapEditors=installMapEditors({source:()=>editor.value,model:()=>model,replace:newSource,link:beginLink});
+function mapAction(event:Event){
+ const button=(event.target as Element).closest<HTMLElement>('[data-map-add],[data-map-perspective],[data-map-focus],[data-map-expand],[data-map-reviews],[data-map-edit],[data-map-review-target],[data-map-edge],[data-map-document-toggle],[data-map-document-edit],#expand-scope-reviews,#edit-map-document,#add-map-connection');if(!button)return;
+ if(event instanceof KeyboardEvent&&!['Enter',' '].includes(event.key))return;
+ event.preventDefault();event.stopPropagation();
+ const d=button.dataset;
+ if(d.mapAdd){const field=d.mapAdd==='realization'?'implemented_by':d.mapAdd==='verification'?'verified_by':'has';authoring.open(d.mapAdd as Kind,{link:{from:d.mapParent!,field}});}
+ else if(d.mapPerspective){mapFocusId=d.mapTarget!;mapPerspective=d.mapPerspective;autoFit=true;draw();}
+ else if(d.mapFocus){mapFocusId=d.mapFocus;mapPerspective='';autoFit=true;el('inspector').hidden=true;draw();}
+ else if(d.mapExpand){expandedMapIds.has(d.mapExpand)?expandedMapIds.delete(d.mapExpand):expandedMapIds.add(d.mapExpand);draw(false);}
+ else if(d.mapReviews){reviewMapTargets.has(d.mapReviews)?reviewMapTargets.delete(d.mapReviews):reviewMapTargets.add(d.mapReviews);draw(false);}
+ else if(d.mapEdit){const entity=model.entities.find(e=>e.id===d.mapEdit)!;authoring.open(entity.kind,{id:entity.id});}
+ else if(d.mapReviewTarget)reviewUI.open(d.mapReviewTarget,d.mapReviewPerspective);
+ else if(d.mapEdge!==undefined)mapEditors.connection(Number(d.mapEdge));
+ else if(d.mapDocumentToggle){documentExpanded=!documentExpanded;draw(false);}
+ else if(d.mapDocumentEdit||button.id==='edit-map-document')mapEditors.metadata();
+ else if(button.id==='add-map-connection')mapEditors.connection();
+ else if(button.id==='expand-scope-reviews'){for(const scope of designCoverage(model,mapFocusId||undefined).scopes)reviewMapTargets.add(scope.target);draw(false);}
+}
+document.addEventListener('click',mapAction,true);document.addEventListener('keydown',mapAction,true);
+
 document.addEventListener('click',event=>{const button=(event.target as Element).closest<HTMLElement>('[data-review-target]');if(button)reviewUI.open(button.dataset.reviewTarget);});
-const authoring=installAuthoring({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource,select:(id)=>{const preserve=qualitySummaryEditingId===id;qualitySummaryEditingId='';select(id,preserve);},save,beginLink});
+const authoring=installAuthoring({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource,select:id=>select(id),save,beginLink});
 function assignVerification(id:string){
  const entity=model.entities.find(e=>e.id===id);if(!entity)return;
  const dialog=document.createElement('dialog');dialog.className='verification-dialog';
@@ -193,64 +226,6 @@ document.addEventListener('click',event=>{const button=(event.target as Element)
 el('new-model').onclick=authoring.start;el('add-element').onclick=authoring.add;
 
 
-function addMapControls(){
- const ns='http://www.w3.org/2000/svg';
- const addHost=(node:SVGGElement)=>{const width=Number(node.querySelector('rect')!.getAttribute('width'));const foreign=document.createElementNS(ns,'foreignObject');foreign.setAttribute('x',String(width-32));foreign.setAttribute('y','4');foreign.setAttribute('width','28');foreign.setAttribute('height','28');return foreign;};
- const plusIcon='<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v10M2 7h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-
- el('drawing').querySelectorAll<SVGGElement>('[data-role="quality-summary"]').forEach(node=>{
-  const open=()=>{qualitySummaryEditingId=node.dataset.node!;authoring.open('quality',{id:qualitySummaryEditingId});};
-  node.setAttribute('aria-label',(node.querySelector('title')?.textContent??'品質要求')+'を編集');
-  node.addEventListener('click',event=>{if(linkingFrom||dragged)return;event.stopPropagation();open();});
-  node.addEventListener('keydown',event=>{if(!linkingFrom&&(event.key==='Enter'||event.key===' ')){event.preventDefault();event.stopPropagation();open();}});
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-help-key]').forEach(node=>{
-  const key=node.dataset.helpKey!;const titles=node.querySelectorAll<SVGTextElement>(':scope > text');const title=titles[titles.length-1];if(!title)return;
-  const help=document.createElementNS(ns,'tspan');help.classList.add('lane-help');help.setAttribute('dx','6');help.setAttribute('font-size','12');help.setAttribute('font-weight','400');help.setAttribute('role','button');help.setAttribute('tabindex','0');help.textContent='?';
-  const description=laneCopy[key]?.[2]??'このカテゴリに属する項目を表示します。';help.setAttribute('aria-label',laneLabel(key,el<HTMLSelectElement>('lane-language').value as LaneLanguage)+'：'+description);
-  const tooltip=document.createElementNS(ns,'title');tooltip.textContent=description;help.append(tooltip);help.addEventListener('click',e=>e.stopPropagation());help.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();}});title.append(help);
- });
- const actions=[['product'],['capability'],['quality'],['policy'],['decision'],['component'],['realization']];
- el('drawing').querySelectorAll<SVGGElement>('[data-role="lane"]').forEach((lane,i)=>{
-  if(i>=2&&lane.dataset.collapsed!=='true')return;
-  for(const kind of actions[i]){
-   const foreign=addHost(lane);
-   const button=document.createElement('button');button.className='map-add';button.dataset.createKind=kind;button.innerHTML=plusIcon;button.title=kind+'を追加';button.setAttribute('aria-label',kind+'を追加');foreign.append(button);lane.append(foreign);
-  }
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-role="capability"][data-node],[data-role="behavior"][data-node]').forEach(node=>{
-  const id=node.dataset.node!;const role=node.dataset.role!;const state=role==='behavior'?collapsedBehaviors:collapsedCapabilities;const label=role==='behavior'?'Behavior':'Capability';const closed=state.has(id);const host=addHost(node);host.setAttribute('x','6');host.setAttribute('y','8');
-  const button=document.createElement('button');button.className='map-fold';button.innerHTML=closed?'▸':'▾';button.title=closed?`${label}を開く`:`${label}を1行に閉じる`;button.setAttribute('aria-label',button.title);button.setAttribute('aria-expanded',String(!closed));
-  button.addEventListener('keydown',event=>event.stopPropagation());
-  button.onclick=event=>{event.stopPropagation();const before=node.getBoundingClientRect().top;if(closed)state.delete(id);else state.add(id);draw(false);const after=el('drawing').querySelector(`[data-role="${role}"][data-node="${CSS.escape(id)}"]`)!.getBoundingClientRect().top;offsetY+=before-after;applyScale();};host.append(button);node.append(host);
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-item-kind]').forEach(node=>{
-  const host=addHost(node);const button=document.createElement('button');button.className='map-add';button.innerHTML=plusIcon;button.dataset.createKind=node.dataset.itemKind;button.dataset.itemType=node.dataset.itemType??'';button.title=laneLabel(node.dataset.helpKey!,el<HTMLSelectElement>('lane-language').value as LaneLanguage)+'を追加';button.setAttribute('aria-label',button.title);host.append(button);node.append(host);
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-role="quality-category"]').forEach(node=>{
-  const attribute=node.dataset.qualityAttribute!;if(attribute==='unspecified')return;
-  const foreign=addHost(node);
-  const button=document.createElement('button');button.className='map-add';button.innerHTML=plusIcon;button.dataset.createKind='quality';button.dataset.qualityAttribute=attribute;
-  if(node.dataset.capability){button.dataset.linkField='has';button.dataset.linkFrom=node.dataset.capability;}
-  button.title=`${attribute}の品質要求を追加`;button.setAttribute('aria-label',button.title);foreign.append(button);node.append(foreign);
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-role="decision-category"]').forEach(node=>{
-  const foreign=addHost(node);
-  const button=document.createElement('button');button.className='map-add';button.innerHTML=plusIcon;button.dataset.createKind='decision';button.dataset.decisionCategory=node.dataset.decisionCategory;button.title='設計判断を追加';button.setAttribute('aria-label',button.title);foreign.append(button);node.append(foreign);
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-role="policy-category"]').forEach(node=>{
-  const foreign=addHost(node);
-  const button=document.createElement('button');button.className='map-add';button.innerHTML=plusIcon;button.dataset.createKind='policy';button.dataset.policyCategory=node.dataset.policyCategory;button.title='ポリシーを追加';button.setAttribute('aria-label',button.title);foreign.append(button);node.append(foreign);
- });
- el('drawing').querySelectorAll<SVGGElement>('[data-node],[data-role="empty-behavior"]').forEach(node=>{
-  const role=node.getAttribute('data-role');const id=node.getAttribute('data-node')??'';
-  const child=(role==='behavior'||role==='empty-scenario')?'scenario':(role==='capability'||role==='empty-behavior')?'behavior':role==='product'?'capability':role==='component'?'realization':null;
-  if(!child)return;
-  if((role==='behavior'&&el('drawing').querySelector(`[data-role="empty-scenario"][data-node="${CSS.escape(id)}"]`))||(role==='capability'&&el('drawing').querySelector(`[data-role="empty-behavior"][data-node="${CSS.escape(id)}"]`)))return;
-  const foreign=addHost(node);
-  const button=document.createElement('button');button.className='map-add child-add';button.dataset.createKind=child;if(id){button.dataset.linkField=role==='component'?'implemented_by':'has';button.dataset.linkFrom=id;}button.innerHTML=plusIcon;button.title=`${child}を追加`;button.setAttribute('aria-label',`${model.entities.find(e=>e.id===id)?.name}に${child}を追加`);foreign.append(button);node.append(foreign);
- });
-}
 
 function cancelMapLink(){linkingFrom='';el('link-prompt').hidden=true;el('drawing').querySelectorAll('.link-candidate').forEach(n=>n.classList.remove('link-candidate'));}
 function candidateLinks(id:string){return [...availableLinks(model,linkingFrom).filter(l=>l.target.id===id).map(l=>({...l,from:linkingFrom,to:id})),...availableLinks(model,id).filter(l=>l.target.id===linkingFrom).map(l=>({...l,from:id,to:linkingFrom}))];}
@@ -275,6 +250,8 @@ el('list-map-links').onclick=()=>{
  dialog.querySelector('[data-close]')!.addEventListener('click',()=>dialog.close());dialog.onclose=()=>dialog.remove();document.body.append(dialog);dialog.showModal();
 };
 
-el('lane-language').onchange=()=>{try{localStorage.setItem('archmodel:lane-language',el<HTMLSelectElement>('lane-language').value);}catch{}draw(false);};
 
-openEditor();
+// Keep the map visible on entry; the DSL editor is opened on demand.
+
+const resizePanels=new ResizeObserver(()=>{const top=document.querySelector('main')!.getBoundingClientRect().top;document.querySelectorAll<HTMLElement>('.panel,#scope-panel').forEach(panel=>panel.style.top=`${top}px`);});
+resizePanels.observe(mapContext);resizePanels.observe(workspaceHeader);resizePanels.observe(document.querySelector('.playground-nav')!);

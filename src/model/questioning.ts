@@ -1,3 +1,5 @@
+import {designReviewTargets} from './coverage.js';
+import {reviewRows,reviewScopeIds} from './reviews.js';
 import config from '../../rules/conversation.json';
 import templates from '../../rules/questioning.json';
 import { validateModel } from './analysis.js';
@@ -46,6 +48,8 @@ export function planNextQuestions(model: Model, context: ConversationContext = {
  const phase = context.phase ?? (context.userRequestedDepth === 'overview' ? 'landscape' : context.userRequestedDepth === 'deep' && context.focusIds?.length ? 'depth' : inferPhase(model, ds));
  const rationale = new Set<string>([context.phase ? 'EXPLICIT_PHASE' : 'INFERRED_PHASE']);
  if (ds.some(d => d.severity === 'error')) return { phase, primary: null, related: [], deferred: [], rationaleCodes: [...rationale, 'INVALID_MODEL'] };
+ // Unstarted scopes must never disappear from the design agent's work queue.
+ for(const target of designReviewTargets(model).filter(id=>!reviewScopeIds(model).includes(id)))for(const row of reviewRows(model,target))ds.push({code:'REVIEW_UNREVIEWED',severity:'warning',path:'$.review_scopes',entityId:target,field:row.perspective.id,message:`「${row.perspective.name}」: 未検討です。対象・対象外・保留の判断と根拠を記録してください`});
  const locale = (context.locale ?? 'ja') as 'ja' | 'en';
  const text = (ja: string, en: string) => locale === 'ja' ? ja : en;
  const children = (id: string, kind?: Kind) => model.edges.filter(e => e.from === id && e.relation === 'has' && (!kind || entities.get(e.to)?.kind === kind)).map(e => e.to);

@@ -1,7 +1,7 @@
 # ArchModel Conversational Design Agent
 
 対象: ai-org-labs/archmodel / @archmodel/core 0.1.1。文書ステータス: Draft。
-実装範囲: Phase A〜C（文書・入口・Planner・CLI）。Phase Dは未実装。npmへの新バージョン公開は未実施。
+実装範囲: Phase A〜C（文書・入口・Planner・CLI）。Playgroundにはマップ内の観点展開と対象・観点への絞り込みを実装。Phase DのLLM接続・会話パネルは未実装。npmへの新バージョン公開は未実施。
 
 ## 目的と境界
 
@@ -173,3 +173,7 @@ Cの統合確認はtools/verify-questioning-cli.mjsで行い、npm run verifyに
 手動のシナリオ入力と期待結果は[利用ガイド](AGENT_USAGE.md)に集約する。
 B/CではnextQuestion、validateModel、Design Map、CLI、Schema、既存AC-01〜10の回帰も確認する。
 受入条件を文書化したことと、実際のAgentで合格したことを区別する。
+
+## 観点カバレッジの統合
+
+未開始のProduct/CapabilityもPlannerの未検討候補に含める。旧nextQuestionとvalidateModelの既存文書互換性は維持する。designCoverageとcoverage CLIは全対象の未結論・結論あり・解決済みを集計する。designFocusとfocus CLIは局所設計と境界接続を返す。Playgroundは全体マップを入口にし、対象別の結論数と未結論を表示する。対象を選ぶと同じモデルの局所マップへ絞れ、範囲外への接続を残す。属性・関係・観点・判断根拠・文書情報を同じマップ上で展開・編集する。エージェントの判断品質そのものと決定論的ツールのテストは区別する。

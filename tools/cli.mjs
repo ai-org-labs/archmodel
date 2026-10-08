@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
-import { renderDesignMap, parseModel, validateModel, nextQuestion, planNextQuestions, traceWhy, renderView, qualityMatrix, reviewRows, reviewScopeIds, reviewSummary, toMarkdown, toYaml, backlogCandidates, directoryProposal } from '../dist/archmodel.js';
+import { renderModelMap, parseModel, validateModel, nextQuestion, planNextQuestions, traceWhy, renderView, qualityMatrix, designCoverage, designFocus, startReview, saveReview, reviewRows, reviewScopeIds, reviewSummary, toMarkdown, toYaml, backlogCandidates, directoryProposal } from '../dist/archmodel.js';
 const [command,file,arg,...rest]=process.argv.slice(2);
-const help='Usage: npm run cli -- <validate|question|plan|reviews|why|view|matrix|json|yaml|markdown|backlog|directories> file.archmodel.yaml [id|view] [--strict]\nPlanner: plan|question file [--phase landscape|shape|depth|realization|assurance] [--focus id[,id]] [--depth overview|normal|deep] [--locale ja|en] [--format json|markdown]';
+const help='Usage: npm run cli -- <validate|question|plan|coverage|focus|review-start|review-set|reviews|why|view|matrix|json|yaml|markdown|backlog|directories> file.archmodel.yaml [id|view] [--strict]\nPlanner: plan|question file [--phase landscape|shape|depth|realization|assurance] [--focus id[,id]] [--depth overview|normal|deep] [--locale ja|en] [--format json|markdown]';
 function plannerOptions(args) {
  const context = {}, allowed = ['--phase', '--focus', '--depth', '--locale', '--format'];
  let format = 'json';
@@ -45,7 +45,11 @@ try {
     break;
    }
    case 'why': if(!model.entities.some(e=>e.id===arg))throw new Error(`Unknown ID: ${arg}`);result=traceWhy(model,arg);break;
-   case 'view': if(!['map','connections','contracts','capability','behavior','architecture','policy','decision','verification','implementation','impact'].includes(arg??'capability'))throw new Error('Unknown view');result=arg==='map'?renderDesignMap(model).svg:renderView(model,arg??'capability').svg;break;
+   case 'view': if(!['map','connections','contracts','capability','behavior','architecture','policy','decision','verification','implementation','impact'].includes(arg??'capability'))throw new Error('Unknown view');result=arg==='map'?renderModelMap(model).svg:renderView(model,arg??'capability').svg;break;
+   case 'review-start': {let source=toYaml(model);for(const id of arg?[arg]:designCoverage(model).scopes.map(s=>s.target))source=startReview(source,id);result=source;break;}
+   case 'review-set': {if(!arg)throw new Error('review-set requires a JSON record file');result=saveReview(toYaml(model),JSON.parse(await readFile(arg,'utf8')));break;}
+   case 'coverage': result=designCoverage(model,arg);break;
+   case 'focus': result=designFocus(model,arg,rest[0]);break;
    case 'reviews': {const targets=arg?[arg]:reviewScopeIds(model);result={summary:reviewSummary(model,arg),scopes:targets.map(target=>({target,summary:reviewSummary(model,target),rows:reviewRows(model,target)}))};break;}
    case 'matrix': result=qualityMatrix(model);break;
    case 'json': result=model;break;
