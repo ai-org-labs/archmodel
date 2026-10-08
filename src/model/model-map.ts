@@ -15,7 +15,17 @@ export const modelMapLanes:{title:string;kinds:Kind[]}[]=[
  {title:'技術実現',kinds:['realization']},
  {title:'検証・証跡',kinds:['verification','evidence']}
 ];
-export interface ModelMapOptions {focus?:string;perspective?:string;selectedId?:string;expandedIds?:readonly string[];reviewTargetIds?:readonly string[];expanded?:boolean;showRelations?:boolean;documentExpanded?:boolean}
+export const relationLayers={all:'すべて',structure:'所属',realization:'実現・実装',assurance:'検証・証跡',contracts:'契約',governance:'制約・判断',architecture:'実接続',reviews:'観点の根拠'} as const;
+export type RelationLayer=keyof typeof relationLayers;
+export function relationLayer(relation:string):RelationLayer{
+ if(relation==='has')return 'structure';
+ if(['realizedBy','implementedBy'].includes(relation))return 'realization';
+ if(['verifiedBy','evidencedBy'].includes(relation))return 'assurance';
+ if(['uses','provides','consumes'].includes(relation))return 'contracts';
+ if(['appliesTo','affects'].includes(relation))return 'governance';
+ return 'architecture';
+}
+export interface ModelMapOptions {relationMode?:'cards'|'selected'|'all';relationLayer?:RelationLayer;relationTargetIds?:readonly string[];focus?:string;perspective?:string;selectedId?:string;expandedIds?:readonly string[];reviewTargetIds?:readonly string[];expanded?:boolean;showRelations?:boolean;documentExpanded?:boolean}
 /** Shared projection for overview and focus. Layout state never enters the DSL. */
 export function projectModelMap(model:Model,options:ModelMapOptions={}){
  const errors=validateModel(model).filter(d=>d.severity==='error');if(errors.length)throw new Error(errors.map(e=>e.message).join('\n'));
@@ -31,10 +41,14 @@ const relationName=(name:string)=>Object.entries(referenceFields).find(([,r])=>r
 const stringify=(v:unknown)=>v===undefined?'未設定':typeof v==='object'?JSON.stringify(v,null,2):String(v);
 export function renderModelMap(model:Model,options:ModelMapOptions={}){
  const projection=projectModelMap(model,options),coverage=designCoverage(model,options.focus),width=6*340+32;
+ const mode=options.relationMode??(options.showRelations===true?'all':'cards'),layer=options.relationLayer??'all';
+ const visibleEdges=projection.edges.filter(({edge})=>layer==='all'||relationLayer(edge.relation)===layer);
+ const visibleReviewLinks=projection.reviewLinks.filter(()=>layer==='all'||layer==='reviews');
+ const related=new Set([options.selectedId,...visibleEdges.filter(({edge})=>edge.from===options.selectedId||edge.to===options.selectedId).flatMap(({edge})=>[edge.from,edge.to]),...visibleReviewLinks.filter(l=>l.target===options.selectedId||l.to===options.selectedId).flatMap(l=>[l.target,l.to])]);
  const escape=escapeXml,parts:string[]=[],positions=new Map<string,{x:number;y:number;height:number}>();
  const text=(value:string,x:number,y:number,size=12,color='#304b5a')=>`<text x="${x}" y="${y}" font-size="${size}" fill="${color}">${escape(value)}</text>`;
  const action=(label:string,x:number,y:number,attributes:string,w=132)=>`<g ${attributes} role="button" tabindex="0" aria-label="${escape(label)}" class="model-map-action"><rect x="${x}" y="${y-16}" width="${w}" height="25" rx="4" fill="#e1f2ef" stroke="#94bfb7"/>${text(label,x+7,y,11)}</g>`;
- const docLines=[`version: ${model.version} · ${model.entities.length} 要素 · ${model.edges.length} 関係`,`観点 ${coverage.concluded}/${coverage.total} 結論あり · 未結論 ${coverage.unconcluded} · 保留は未解決`,...(options.documentExpanded?[`review_scopes: ${stringify(model.source.review_scopes??[])}`,`extensions: ${stringify(model.source.extensions)}`,...projection.document.catalog.map(p=>`${p.id}: ${p.name} — ${p.description??''}`)]:[])];
+ const docLines=[`version: ${model.version} · ${model.entities.length} 要素 · ${model.edges.length} 関係`,`関係レイヤー: ${relationLayers[layer]} · ${visibleEdges.length+visibleReviewLinks.length}/${projection.edges.length+projection.reviewLinks.length}件 · ${mode==='cards'?'関係カード（線なし）':mode==='selected'?'選択した関係線':'全ての関係線'}`,`観点 ${coverage.concluded}/${coverage.total} 結論あり · 未結論 ${coverage.unconcluded} · 保留は未解決`,...(options.documentExpanded?[`review_scopes: ${stringify(model.source.review_scopes??[])}`,`extensions: ${stringify(model.source.extensions)}`,...projection.document.catalog.map(p=>`${p.id}: ${p.name} — ${p.description??''}`)]:[])];
  let docY=38;for(const line of docLines)for(const l of wrapText(line,width-400,13)){parts.push(text(l,32,docY,13));docY+=20;}
  parts.push(action(options.documentExpanded?'文書情報を閉じる':'文書・観点定義を展開',width-350,40,'data-map-document-toggle="true"',175),action('文書情報を編集',width-165,40,'data-map-document-edit="true"',145));
  const top=Math.max(100,docY+24),ys=modelMapLanes.map(()=>top+50);
@@ -52,14 +66,24 @@ export function renderModelMap(model:Model,options:ModelMapOptions={}){
   }
   const children:Partial<Record<Kind,Kind[]>>={product:['capability'],capability:['behavior','quality'],behavior:['scenario'],component:['realization'],quality:['verification'],scenario:['verification'],contract:['verification']};
   for(const child of children[e.kind]??[]){body.push(action(`${child}を追加`,x+12,cy,`data-map-add="${child}" data-map-parent="${escape(e.id)}"`,276));cy+=33;}
-  const connected=projection.edges.filter(({edge})=>edge.from===e.id||edge.to===e.id);
-  body.push(text(`関係 ${connected.length}件${!model.edges.some(r=>r.to===e.id&&r.relation==='has')&&['capability','behavior','scenario','quality'].includes(e.kind)?' · 所属未定':''}`,x+12,cy,11));cy+=23;
-  if(expanded)for(const {edge,index}of connected){
+  const connected=visibleEdges.filter(({edge})=>edge.from===e.id||edge.to===e.id);
+  const supporting=visibleReviewLinks.filter(l=>l.target===e.id||l.to===e.id);
+  body.push(text(`関係 ${connected.length+supporting.length}件${!model.edges.some(r=>r.to===e.id&&r.relation==='has')&&['capability','behavior','scenario','quality'].includes(e.kind)?' · 所属未定':''}`,x+12,cy,11));cy+=23;
+  const grouped=new Map<string,number>();for(const {edge}of connected){const key=`${edge.from===e.id?'→':'←'} ${relationName(edge.relation)}`;grouped.set(key,(grouped.get(key)??0)+1);}
+  if(supporting.length)grouped.set('addresses（観点の根拠）',supporting.length);
+  for(const line of wrapText([...grouped].map(([key,n])=>`${key} ${n}`).join(' / ')||'このレイヤーの関係なし',270,11)){body.push(text(line,x+12,cy,11));cy+=17;}
+  const relationsExpanded=!!options.relationTargetIds?.includes(e.id)||expanded;
+  body.push(action(relationsExpanded?'関係カードを閉じる':`関係カードを開く (${connected.length+supporting.length})`,x+12,cy+8,`data-map-relations="${escape(e.id)}"`,276));cy+=42;
+  if(relationsExpanded)for(const {edge,index}of connected){
    const other=edge.from===e.id?edge.to:edge.from;
    body.push(`<g data-map-edge="${index}" role="button" tabindex="0" aria-label="${escape(edge.relation+' '+other)}">`);
    for(const line of wrapText(`${edge.from===e.id?'→':'←'} ${relationName(edge.relation)}: ${other}`,270,11)){body.push(text(line,x+12,cy,11,'#137f88'));cy+=17;}
    if(edge.id){const connection=model.connections.find(c=>c.id===edge.id);if(connection)for(const [k,v]of Object.entries(connection))for(const line of wrapText(`${k}: ${stringify(v)}`,270,11)){body.push(text(line,x+12,cy,11));cy+=17;}}
-   body.push('</g>');cy+=8;
+   body.push('</g>');body.push(action('接続先へ移動',x+12,cy+8,`data-map-reveal="${escape(other)}"`,276));cy+=40;
+  }
+  if(relationsExpanded)for(const link of supporting){const other=link.target===e.id?link.to:link.target;
+   for(const line of wrapText(`addresses: ${link.perspective} → ${other}`,270,11)){body.push(text(line,x+12,cy,11));cy+=17;}
+   body.push(action('判断と根拠を確認',x+12,cy+8,`data-map-review-target="${escape(link.target)}" data-map-review-perspective="${escape(link.perspective)}"`,132),action('接続先へ移動',x+154,cy+8,`data-map-reveal="${escape(other)}"`,134));cy+=42;
   }
   if(node.reviews.length){
    const concluded=node.reviews.filter(r=>r.record&&['applicable','not_applicable','deferred'].includes(r.status)&&!r.gaps.length).length;
@@ -72,14 +96,14 @@ export function renderModelMap(model:Model,options:ModelMapOptions={}){
    }
   }else {body.push(action('観点を検討する',x+12,cy,`data-map-reviews="${escape(e.id)}"`,276));cy+=35;}
   const height=cy-y+8;positions.set(e.id,{x,y,height});ys[node.lane]=cy+32;
-  parts.push(`<g data-node="${escape(e.id)}" role="button" tabindex="0" aria-label="${escape(e.name)}"><rect x="${x}" y="${y}" width="300" height="${height}" rx="7" fill="#fffdf8" stroke="${options.selectedId===e.id?'#137f88':node.boundary?'#bb8b35':'#a4c4be'}" stroke-width="${options.selectedId===e.id?3:1}" ${node.boundary?'stroke-dasharray="5 3"':''}/>${body.join('')}</g>`);
+  parts.push(`<g data-node="${escape(e.id)}" role="button" tabindex="0" aria-label="${escape(e.name)}"><rect x="${x}" y="${y}" width="300" height="${height}" rx="7" fill="#fffdf8" stroke="${related.has(e.id)?'#137f88':node.boundary?'#bb8b35':'#a4c4be'}" stroke-width="${options.selectedId===e.id?3:related.has(e.id)?2:1}" ${node.boundary?'stroke-dasharray="5 3"':''}/>${body.join('')}</g>`);
  }
  const links:string[]=[];
- if(options.showRelations!==false)for(const {edge,index}of projection.edges){const a=positions.get(edge.from),b=positions.get(edge.to);if(!a||!b)continue;const ax=a.x+300,ay=a.y+32,bx=b.x,by=b.y+32;const highlighted=edge.from===options.selectedId||edge.to===options.selectedId;
+ if(mode!=='cards')for(const {edge,index}of visibleEdges.filter(({edge})=>mode==='all'||edge.from===options.selectedId||edge.to===options.selectedId)){const a=positions.get(edge.from),b=positions.get(edge.to);if(!a||!b)continue;const ax=a.x+300,ay=a.y+32,bx=b.x,by=b.y+32;const highlighted=edge.from===options.selectedId||edge.to===options.selectedId;
   const path=a.x===b.x?`M ${ax} ${ay} C ${ax+28} ${ay}, ${ax+28} ${by}, ${bx+300} ${by}`:`M ${ax} ${ay} C ${ax+28} ${ay}, ${bx-28} ${by}, ${bx} ${by}`;
-  links.push(`<g data-map-edge="${index}" role="button" tabindex="0" aria-label="${escape(edge.from+' '+edge.relation+' '+edge.to)}"><title>${escape(JSON.stringify({...edge,relation:relationName(edge.relation)}))}</title><path d="${path}" fill="none" stroke="${highlighted?'#137f88':'#99b0b7'}" stroke-width="${highlighted?2.5:1}" marker-end="url(#model-arrow)"/><path d="${path}" fill="none" stroke="transparent" stroke-width="10"/></g>`);
+  links.push(`<g data-map-edge="${index}" role="button" tabindex="0" aria-label="${escape(edge.from+' '+edge.relation+' '+edge.to)}"><title>${escape(JSON.stringify({...edge,relation:relationName(edge.relation)}))}</title><path data-connection-line="true" d="${path}" fill="none" stroke="${highlighted?'#137f88':'#99b0b7'}" stroke-width="${highlighted?2.5:1}" marker-end="url(#model-arrow)"/><path d="${path}" fill="none" stroke="transparent" stroke-width="10"/></g>`);
  }
- if(options.showRelations!==false)for(const link of projection.reviewLinks){const a=positions.get(link.target),b=positions.get(link.to);if(!a||!b)continue;links.push(`<g data-map-review-target="${escape(link.target)}" data-map-review-perspective="${escape(link.perspective)}" role="button" tabindex="0" aria-label="${escape(link.perspective+' addresses '+link.to)}"><title>${escape(link.perspective+' → addresses: '+link.to)}</title><path d="M${a.x+300} ${a.y+60} C${a.x+328} ${a.y+60},${b.x-28} ${b.y+60},${b.x} ${b.y+60}" fill="none" stroke="#9d6d33" stroke-dasharray="4 4" marker-end="url(#model-arrow)"/></g>`);}
+ if(mode!=='cards')for(const link of visibleReviewLinks.filter(l=>mode==='all'||l.target===options.selectedId||l.to===options.selectedId)){const a=positions.get(link.target),b=positions.get(link.to);if(!a||!b)continue;links.push(`<g data-map-review-target="${escape(link.target)}" data-map-review-perspective="${escape(link.perspective)}" role="button" tabindex="0" aria-label="${escape(link.perspective+' addresses '+link.to)}"><title>${escape(link.perspective+' → addresses: '+link.to)}</title><path data-connection-line="true" d="M${a.x+300} ${a.y+60} C${a.x+328} ${a.y+60},${b.x-28} ${b.y+60},${b.x} ${b.y+60}" fill="none" stroke="#9d6d33" stroke-dasharray="4 4" marker-end="url(#model-arrow)"/></g>`);}
  const height=Math.max(...ys,top+160);
  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="ArchModel 全体マップ" style="font-family:Inter,Arial,'Noto Sans JP',sans-serif"><title>ArchModel — ${options.focus?'対象 '+options.focus:'全体マップ'}</title><defs><marker id="model-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#137f88"/></marker></defs><rect width="100%" height="100%" fill="#f5f2ea"/>${links.join('')}${parts.join('')}</svg>`;
  return {svg,layout:{width,height},projection};

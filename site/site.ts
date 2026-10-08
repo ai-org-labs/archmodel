@@ -1,3 +1,4 @@
+import {installMapGestures} from './map-gestures.js';
 import {installMapEditors} from './map-editors.js';
 import {installReviews} from './reviews.js';
 import {examples,navigation,siteBase} from './content.js';
@@ -10,13 +11,13 @@ import {installAuthoring} from './authoring.js';
 import './site.css';
 import sample from '../syntax/examples/design-map.archmodel.yaml?raw';
 import bottomUp from '../syntax/examples/bottom-up.archmodel.yaml?raw';
-import {deleteEntity,parseModel,validateModel,planNextQuestions,designCoverage,reviewRows,renderModelMap,toMarkdown,availableLinks,linkEntities,EMPTY_MODEL} from '@archmodel/core';
-import type {Model,Kind} from '@archmodel/core';
+import {deleteEntity,parseModel,validateModel,planNextQuestions,designCoverage,reviewRows,renderModelMap,relationLayers,toMarkdown,availableLinks,linkEntities,EMPTY_MODEL} from '@archmodel/core';
+import type {Model,Kind,RelationLayer} from '@archmodel/core';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 document.body.innerHTML=`<header><div class="brand"><span class="brand-mark">A</span><strong>ArchModel</strong><span class="divider"></span><span class="workspace-name">Design map</span></div><nav><button id="new-model">新規作成</button><button id="add-element">＋ 要素</button><button id="load">開く</button><input type="file" id="file" accept=".yaml,.yml,.json" hidden><button id="save">YAML保存</button><button id="svg">SVG保存</button><button id="edit" class="primary" aria-expanded="false">〈 〉 DSLを編集</button></nav></header>
-<div class="map-toolbar"><div><h1 id="title">Customer Platform</h1><span id="summary" role="status"></span></div><div class="map-actions"><select id="lane-language" aria-label="レーンの表示言語"><option value="en">English</option><option value="ja">日本語</option></select><button id="scope-toggle">関連範囲</button><label class="relations"><input type="checkbox" id="expanded">全属性・観点を展開</label><label class="relations"><input type="checkbox" id="relations">関連線を表示</label><button id="checks" aria-label="設計の確認" title="設計の確認">設計の確認 <span id="issue-count">0</span></button><button id="help" aria-label="構文リファレンス">?</button></div></div>
-<div id="scope-panel" hidden><label>深さ <input id="scope-depth" type="number" min="0" max="20" value="3"></label><label>方向 <select id="scope-direction"><option value="forward">順方向</option><option value="reverse">逆方向</option><option value="both">双方向</option></select></label><label>関連種別 <select id="scope-types"><option value="design">設計・実装・検証</option><option value="all">全ての意味付き関連</option><option value="architecture">システム接続</option><option value="contract">Contract</option><option value="policy">Policy / Decision</option></select></label></div><main><div id="link-prompt" hidden role="status"><span></span><button id="list-map-links">一覧から選ぶ</button><button id="cancel-map-link">キャンセル</button></div><section id="canvas" tabindex="0" aria-label="設計マップ。ドラッグで移動、要素を選択して詳細を確認"><div id="drawing"></div></section><div class="map-legend"><span class="legend-neutral">設計要素</span><span class="legend-accent">選択・関連</span></div><div class="zoom-controls"><button id="zoom-out" aria-label="縮小">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="拡大">＋</button><button id="fit">全体表示</button><button id="actual">100%</button></div><div id="empty-error" hidden></div></main>
+<div class="map-toolbar"><div><h1 id="title">Customer Platform</h1><span id="summary" role="status"></span></div><div class="map-actions"><select id="lane-language" aria-label="レーンの表示言語"><option value="en">English</option><option value="ja">日本語</option></select><button id="scope-toggle">関連範囲</button><label class="relations"><input type="checkbox" id="expanded">全属性・観点を展開</label><select id="relation-mode" aria-label="関係の表示"><option value="cards">関係カード（線なし）</option><option value="selected">選択した関係だけ線を表示</option><option value="all">すべての線を表示</option></select><select id="relation-layer" aria-label="関係のレイヤー">${Object.entries(relationLayers).map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select><button id="checks" aria-label="設計の確認" title="設計の確認">設計の確認 <span id="issue-count">0</span></button><button id="help" aria-label="構文リファレンス">?</button></div></div>
+<div id="scope-panel" hidden><label>深さ <input id="scope-depth" type="number" min="0" max="20" value="3"></label><label>方向 <select id="scope-direction"><option value="forward">順方向</option><option value="reverse">逆方向</option><option value="both">双方向</option></select></label><label>関連種別 <select id="scope-types"><option value="design">設計・実装・検証</option><option value="all">全ての意味付き関連</option><option value="architecture">システム接続</option><option value="contract">Contract</option><option value="policy">Policy / Decision</option></select></label></div><main><div id="link-prompt" hidden role="status"><span></span><button id="list-map-links">一覧から選ぶ</button><button id="cancel-map-link">キャンセル</button></div><section id="canvas" tabindex="0" aria-label="設計マップ。1本指で移動、2本指でピンチズーム、要素を選択して詳細を確認"><div id="drawing"></div></section><div class="map-legend"><span class="legend-neutral">設計要素</span><span class="legend-accent">選択・関連</span></div><div class="zoom-controls"><button id="zoom-out" aria-label="縮小">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="拡大">＋</button><button id="fit">全体表示</button><button id="actual">100%</button></div><div id="empty-error" hidden></div></main>
 <footer><span>Product → Capability → Behavior → Scenario</span><span>要素を選択すると、品質・設計・実装まで辿れます</span><div><span id="merge-result" role="status"></span><button id="restore-work" hidden>前の作業に戻る</button><button id="merge-open">YAMLを追加</button><input id="merge-file" type="file" accept=".yaml,.yml" hidden><button id="example">設計サンプル</button><button id="bottom">既存システムから</button></div></footer>
 <aside id="editor-panel" class="panel editor-panel" hidden><div class="panel-head"><div><small>SOURCE OF TRUTH</small><h2>Design Model</h2><button id="reload-example" type="button">最新のExampleに戻す</button></div><button id="close-editor" aria-label="エディタを閉じる">×</button></div><p class="panel-note">YAMLの内容が、そのまま設計マップに展開されます。</p><label for="source" class="sr-only">ArchModel DSL</label><textarea id="source" spellcheck="false" wrap="off"></textarea><div class="panel-bottom"><span id="storage">変更は自動保存されます</span><button id="markdown">Markdown保存</button><button id="json">JSON保存</button></div></aside>
 <aside id="inspector" class="panel inspector" hidden><div class="panel-head"><div><small id="detail-kind">DESIGN ELEMENT</small><h2 id="detail-title">設計要素</h2></div><button id="close-inspector" aria-label="詳細を閉じる">×</button></div><div id="detail"></div></aside>
@@ -36,7 +37,10 @@ function headerMenu(label:string,ids:string[],className:string){
  menu.append(body);workspaceTools.append(menu);return menu;
 }
 el('lane-language').remove();el('scope-toggle').remove();el('scope-panel').remove();
-headerMenu('表示設定',['expanded','relations'],'display-menu');
+headerMenu('表示設定',['expanded'],'display-menu');
+const relationsMenu=headerMenu('関係の表示',['relation-mode','relation-layer'],'relations-menu');
+for(const [id,title]of [['relation-mode','表示方法'],['relation-layer','レイヤー']]){const control=relationsMenu.querySelector<HTMLElement>('#'+id)!,label=document.createElement('label');label.htmlFor=id;label.textContent=title;control.before(label);}
+relationsMenu.querySelector('.header-menu-body')!.insertAdjacentHTML('beforeend','<small>全要素を残したまま、関係の見せ方を切り替えます。</small>');
 workspaceTools.insertAdjacentHTML('beforeend','<button id="open-coverage">観点を展開</button><button id="open-map">全体マップ</button><button id="open-reviews">観点レビュー</button>');
 workspaceTools.append(el('checks'),el('edit'));
 headerMenu('ファイル',['new-model','add-element','load','file','save','svg','help'],'file-menu');
@@ -55,8 +59,9 @@ document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>{
 });
 document.addEventListener('pointerdown',event=>{if(!(event.target as Element).closest('.header-menu'))document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>menu.open=false);});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll<HTMLDetailsElement>('.header-menu').forEach(menu=>menu.open=false);});
-const editor=el<HTMLTextAreaElement>('source');let model:Model=parseModel(EMPTY_MODEL);let selectedId='';let svg='';let size={width:2200,height:1200};let scale=1;let autoFit=true;let offsetX=24,offsetY=24,targetScale=1,zoomFrame=0;let zoomAnchor={x:0,y:0};let timer:ReturnType<typeof setTimeout>;let dragged=false;
+const editor=el<HTMLTextAreaElement>('source');let model:Model=parseModel(EMPTY_MODEL);let selectedId='';let svg='';let size={width:2200,height:1200};let scale=1;let autoFit=true;let offsetX=24,offsetY=24,targetScale=1,zoomFrame=0;let zoomAnchor={x:0,y:0};let timer:ReturnType<typeof setTimeout>;
 const expandedMapIds=new Set<string>();
+const relationMapTargets=new Set<string>();
 const reviewMapTargets=new Set<string>();
 let documentExpanded=false;
 let mapFocusId='';
@@ -67,7 +72,6 @@ const collapsedCapabilities=new Set<string>();
 const collapsedBehaviors=new Set<string>();
 const storageKey=selectedExample?`archmodel:playground:${selectedExample.id}:v0.1`:'archmodel:canonical:v0.1';
 try{editor.value=localStorage.getItem(storageKey)??selectedExample?.source??sample;}catch{editor.value=selectedExample?.source??sample;el('storage').textContent='下書きを保存できません。YAML保存をご利用ください。';}
-el<HTMLInputElement>('relations').checked=true;
 const documentHistory=new DocumentHistory(editor.value);
 function syncHistory(){el<HTMLButtonElement>('undo').disabled=!documentHistory.canUndo&&editor.value===documentHistory.current;el<HTMLButtonElement>('redo').disabled=!documentHistory.canRedo||editor.value!==documentHistory.current;}
 function commitEditor(){clearTimeout(timer);documentHistory.record(editor.value);syncHistory();}
@@ -105,7 +109,7 @@ function draw(refit=true){
  el<HTMLSelectElement>('map-jump').onchange=()=>{const id=el<HTMLSelectElement>('map-jump').value;if(!id)return;if(!el('drawing').querySelector(`[data-node="${CSS.escape(id)}"]`)){mapFocusId='';mapPerspective='';draw(false);}select(id);revealNode(id);};
  const reviewJump=el<HTMLSelectElement>('map-review-jump');if(reviewJump)reviewJump.onchange=()=>{const perspective=reviewJump.value;if(!perspective)return;mapPerspective='';reviewMapTargets.add(reviewNavigationTarget);draw(false);const node=el('drawing').querySelector<SVGGElement>(`[data-map-review-target="${CSS.escape(reviewNavigationTarget)}"][data-map-review-perspective="${CSS.escape(perspective)}"]`);if(node){const box=node.getBBox();stopZoom();scale=1;targetScale=1;offsetX=24-box.x;offsetY=24-box.y;autoFit=false;applyScale();}};
  const clear=el('clear-map-focus');if(clear)clear.onclick=()=>{mapFocusId='';mapPerspective='';autoFit=true;draw();};
- const result=renderModelMap(model,{focus:mapFocusId||undefined,perspective:mapPerspective||undefined,selectedId,expandedIds:[...expandedMapIds],reviewTargetIds:[...reviewMapTargets],documentExpanded,expanded:el<HTMLInputElement>('expanded').checked,showRelations:el<HTMLInputElement>('relations').checked});svg=result.svg;size=result.layout;el('drawing').innerHTML=svg;el<HTMLButtonElement>('svg').disabled=false;if(refit&&autoFit)readableFit();else applyScale();
+ const result=renderModelMap(model,{focus:mapFocusId||undefined,perspective:mapPerspective||undefined,selectedId,expandedIds:[...expandedMapIds],reviewTargetIds:[...reviewMapTargets],documentExpanded,expanded:el<HTMLInputElement>('expanded').checked,relationMode:el<HTMLSelectElement>('relation-mode').value as 'cards'|'selected'|'all',relationLayer:el<HTMLSelectElement>('relation-layer').value as RelationLayer,relationTargetIds:[...relationMapTargets]});svg=result.svg;size=result.layout;el('drawing').innerHTML=svg;el<HTMLButtonElement>('svg').disabled=false;if(refit&&autoFit)readableFit();else applyScale();
 
 }
 function update(){
@@ -131,15 +135,12 @@ el('close-inspector').onclick=()=>{el('inspector').hidden=true;draw(false);};
 el('checks').onclick=()=>{el('check-panel').hidden=!el('check-panel').hidden;el('inspector').hidden=true;};el('close-checks').onclick=()=>el('check-panel').hidden=true;
 el('reload-example').onclick=()=>{if(confirm('編集中の内容を最新のExampleに置き換えます。必要な内容はYAML保存してください。'))newSource(selectedExample?.source??sample);};
 el('example').onclick=()=>{if(editor.value===sample||confirm('現在のモデルを設計サンプルに置き換えますか？必要な変更はYAML保存してください。'))newSource(sample);};el('bottom').onclick=()=>{if(confirm('既存システムから始めるサンプルに切り替えますか？'))newSource(bottomUp);};
-el('relations').onchange=()=>draw(false);el('expanded').onchange=()=>{autoFit=true;draw();};
+el('relation-mode').onchange=()=>draw(false);el('relation-layer').onchange=()=>draw(false);el('expanded').onchange=()=>{autoFit=true;draw();};
 el('zoom-in').onclick=()=>zoomTo((zoomFrame?targetScale:scale)*1.25);el('zoom-out').onclick=()=>zoomTo((zoomFrame?targetScale:scale)/1.25);el('fit').onclick=fit;el('actual').onclick=()=>zoomTo(1);
 window.addEventListener('resize',()=>{if(autoFit)readableFit();});
-document.addEventListener('click',e=>{if(dragged){dragged=false;return;}if((e.target as Element).closest('[data-create-kind]'))return;const target=(e.target as Element).closest<HTMLElement>('[data-node],[data-select]');if(target){const id=target.dataset.node??target.dataset.select!;if(linkingFrom)completeMapLink(id);else select(id);}});
+document.addEventListener('click',e=>{if((e.target as Element).closest('[data-create-kind]'))return;const target=(e.target as Element).closest<HTMLElement>('[data-node],[data-select]');if(target){const id=target.dataset.node??target.dataset.select!;if(linkingFrom)completeMapLink(id);else select(id);}});
 el('canvas').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const node=(e.target as Element).closest<HTMLElement>('[data-node]');if(node){e.preventDefault();if(linkingFrom)completeMapLink(node.dataset.node!);else select(node.dataset.node!);}}});
-let pan:{x:number;y:number;left:number;top:number;pointerId:number}|undefined;
-el('canvas').addEventListener('pointerdown',e=>{if(e.button!==0||(e.target as Element).closest('button,.lane-help,[data-map-expand],[data-map-reviews],[data-map-review-target],[data-map-edit],[data-map-focus],[data-map-add]'))return;stopZoom();pan={x:e.clientX,y:e.clientY,left:offsetX,top:offsetY,pointerId:e.pointerId};dragged=false;});
-window.addEventListener('pointermove',e=>{if(!pan||pan.pointerId!==e.pointerId)return;const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(dragged||Math.abs(dx)+Math.abs(dy)>4){dragged=true;autoFit=false;offsetX=pan.left+dx;offsetY=pan.top+dy;el('canvas').setPointerCapture(e.pointerId);applyScale();}});
-const endPan=()=>{pan=undefined;setTimeout(()=>dragged=false,0);};window.addEventListener('pointerup',endPan);window.addEventListener('pointercancel',endPan);
+installMapGestures(el('canvas'),{get:()=>({scale,x:offsetX,y:offsetY}),begin:stopZoom,set:value=>{autoFit=false;scale=value.scale;targetScale=scale;offsetX=value.x;offsetY=value.y;applyScale();}});
 el('canvas').addEventListener('wheel',e=>{e.preventDefault();const unit=e.deltaMode===1?16:e.deltaMode===2?el('canvas').clientHeight:1;if(e.ctrlKey||e.metaKey){const rect=el('canvas').getBoundingClientRect();zoomTo((zoomFrame?targetScale:scale)*Math.exp(-e.deltaY*unit*.008),e.clientX-rect.left,e.clientY-rect.top);}else{stopZoom();autoFit=false;offsetX-=e.deltaX*unit;offsetY-=e.deltaY*unit;applyScale();}},{passive:false});
 
 el('save').onclick=()=>save('design.archmodel.yaml',editor.value,'text/yaml');el('svg').onclick=()=>{clearTimeout(timer);update();if(svg)save('design-map.svg',svg,'image/svg+xml');};
@@ -154,11 +155,13 @@ el('open-coverage').onclick=()=>{const targets=selectedId?[selectedId]:designCov
 el('open-map').onclick=()=>{mapFocusId='';mapPerspective='';autoFit=true;draw();};
 const mapEditors=installMapEditors({source:()=>editor.value,model:()=>model,replace:newSource,link:beginLink});
 function mapAction(event:Event){
- const button=(event.target as Element).closest<HTMLElement>('[data-map-add],[data-map-perspective],[data-map-focus],[data-map-expand],[data-map-reviews],[data-map-edit],[data-map-review-target],[data-map-edge],[data-map-document-toggle],[data-map-document-edit],#expand-scope-reviews,#edit-map-document,#add-map-connection');if(!button)return;
+ const button=(event.target as Element).closest<HTMLElement>('[data-map-relations],[data-map-reveal],[data-map-add],[data-map-perspective],[data-map-focus],[data-map-expand],[data-map-reviews],[data-map-edit],[data-map-review-target],[data-map-edge],[data-map-document-toggle],[data-map-document-edit],#expand-scope-reviews,#edit-map-document,#add-map-connection');if(!button)return;
  if(event instanceof KeyboardEvent&&!['Enter',' '].includes(event.key))return;
  event.preventDefault();event.stopPropagation();
  const d=button.dataset;
- if(d.mapAdd){const field=d.mapAdd==='realization'?'implemented_by':d.mapAdd==='verification'?'verified_by':'has';authoring.open(d.mapAdd as Kind,{link:{from:d.mapParent!,field}});}
+ if(d.mapRelations){relationMapTargets.has(d.mapRelations)?relationMapTargets.delete(d.mapRelations):relationMapTargets.add(d.mapRelations);draw(false);}
+ else if(d.mapReveal){const id=d.mapReveal;if(!el('drawing').querySelector(`[data-node="${CSS.escape(id)}"]`)){mapFocusId='';mapPerspective='';draw(false);}select(id);revealNode(id);}
+ else if(d.mapAdd){const field=d.mapAdd==='realization'?'implemented_by':d.mapAdd==='verification'?'verified_by':'has';authoring.open(d.mapAdd as Kind,{link:{from:d.mapParent!,field}});}
  else if(d.mapPerspective){mapFocusId=d.mapTarget!;mapPerspective=d.mapPerspective;autoFit=true;draw();}
  else if(d.mapFocus){mapFocusId=d.mapFocus;mapPerspective='';autoFit=true;el('inspector').hidden=true;draw();}
  else if(d.mapExpand){expandedMapIds.has(d.mapExpand)?expandedMapIds.delete(d.mapExpand):expandedMapIds.add(d.mapExpand);draw(false);}
