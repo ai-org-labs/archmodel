@@ -46,7 +46,7 @@ reviews:
 
 観点の判断完了と、設計・実装・検証の完了は別です。対象外の記録で既存QualityやVerificationの不足を消しません。前提変更を自動判断しないため、変更時には担当者がrevisit_whenと照合します。UIでaddressesの参照先を削除すると、その記録をin_reviewへ戻します。
 
-Playgroundは全体マップを初期表示します。各要素の属性・関係・観点をその場で展開できます。観点を選ぶと判断と根拠を編集し、DSLへ保存します。対象または観点へ絞り込んでも同じ分類・要素表現を使い、範囲外への接続を残します。文書情報・独自観点・実接続の詳細もマップから編集できます。CLIの `archmodel reviews model.yaml [target-id]` で集計と各観点の状態を取得できます。YAML・Markdown出力にも記録が残ります。
+Playgroundは全体マップを初期表示します。各要素を選ぶと全属性・関係・実接続と既存の観点記録を読めます。機能の隣には共通順序の品質観点を表示し、観点名から適用判断・根拠・未検討を確認できます。内容はDSLエディタで編集・保存します。CLIの `archmodel reviews model.yaml [target-id]` でも記録を取得でき、YAML・Markdown出力にも残ります。
 
 `archmodel coverage model.yaml [target-id]` は未開始も含むカバレッジを取得します。根拠の揃ったapplicable / not_applicable / deferredを「結論あり」と数え、deferredを除くものを「解決済み」と数えます。`archmodel focus model.yaml target-id [perspective-id]` は対象の設計内容・関連・範囲外接続を返します。これらは読み取り専用です。`review-start`と`review-set`は更新後YAMLを標準出力します。
 
@@ -212,7 +212,11 @@ Scenarioはtype / specification、Behaviorはuse_cases、Policyはrules、Decisi
 
 ## View
 
-全体マップは6つの表示領域に全12種類の要素を配置します。所属と共有は意味付きの接続で表し、共有要素を複製しません。`projectModelMap`は全属性・関係・観点と境界を射影し、`renderModelMap`はそのSVGを生成します。`expanded`で全属性・観点、`documentExpanded`で文書情報を展開します。`focus`と`perspective`で対象・観点に絞れます。座標は意味モデルから自動生成しDSLへ保存しません。
+`renderStructuredMap(model, {selectedId})` はProductの目的と範囲、Capability → Behavior → Scenarioの入れ子、対応する品質要求、方針・判断・構成・技術実現・検証を同じ全体マップに配置します。共有要素と所属未定も一度ずつ表示し、選択で配置を変えません。全属性と関係は詳細表示に保持します。
+
+品質の分類見出しは表示上の整理で、IPA非機能要求グレードの全下位項目やレベルの実装ではありません。観点未定義・未検討・保留・対象外を区別し、親の判断を継承しません。要求水準、検討の結論、検証結果を別々に表示します。
+
+従来の `projectModelMap` / `renderModelMap` は全属性・関係・観点の射影、展開と絞り込みを持つ互換APIとして保持します。座標は意味モデルから自動生成しDSLへ保存しません。
 旧`renderDesignMap`は互換用の7列マップAPIです。`renderView(model, 'connections')`は実接続の構成図、`renderView(model, 'contracts')`は契約関係図です。元のarchitecture Viewは要求・Component・Realizationのトレーサビリティです。
 
 <!-- GENERATED FIELD TYPES -->

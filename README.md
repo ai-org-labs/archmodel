@@ -2,7 +2,7 @@
 
 ProductからCapability、Behavior、Scenario、Quality、Component、技術実現、検証までをつなぐYAML DSLと設計マップです。
 
-主画面は全体マップです。価値・能力、振る舞い、品質・制約、責務・契約・判断、技術実現、検証・証跡の6領域に全要素を配置し、同じマップ内で属性・設計観点・判断根拠・関係を展開して編集できます。
+主画面は全体マップです。Productの目的と範囲を上部に置き、Capability → Behavior → Scenarioを入れ子に、その横に品質要求を配置します。方針・判断・構成・技術実現・検証は適用範囲ごとに整理し、共有要素や所属未定も一度ずつ表示します。内容の編集はDSLで行います。
 
 [archmap-mermaid](https://github.com/ai-org-labs/archmap-mermaid)から描画・配線・SVG基盤を引き継いだ独立リポジトリです。元リポジトリへの実行時依存はありません。DSLの意味モデルとレーン配置は新規実装です。
 
@@ -51,15 +51,14 @@ npm run dev
 
 ## 設計マップ
 
-- 全要素と関係を配置し、各要素の「属性を展開」で全属性と関係の詳細を表示します。
-- 「観点」で未検討を含む観点を展開し、その観点を選んで判断・理由・前提・リスク・再検討条件を記録します。
-- 「絞る」「この観点に絞る」は同じマップを局所表示します。点線のカードは範囲外への接続です。
-- マップ内から関連する要素を作成し、参照を付けて保存できます。要素・関係・実接続・文書情報の編集は選択した対象から開きます。
-- 文書・観点定義を展開すると、version、extensions、検討範囲と観点カタログを確認できます。
-- 概要は読み取り可能な倍率で開きます。「全体表示」で全体を俯瞰し、「対象へ移動」で任意の要素へ移動できます。タッチは1本指のスワイプで移動、2本指のピンチでズームできます。トラックパッドのスクロール・ピンチ、マウスのドラッグ、100%表示にも対応します。
-- 全体マップに全要素と関係を表示します。対象を選ぶと関連を強調し、配置を保ったまま追えます。未結論・保留・設計の不足は対象に表示し、属性や観点の詳細は必要な対象だけ展開します。
-- 結論ありには根拠の揃った保留を含みます。未解決・設計不足・検証結果は別に扱い、空欄を対象外とは扱いません。
-- SVG保存も同じ射影です。DSLにビューの座標・展開状態は保存しません。
+- すべての要素を同じマップに配置します。選択で関連を強調しても位置は変わりません。接続線は常時表示しません。
+- 機能の所属と共有範囲は宣言された設計関係から求めます。通信先を所属とみなさず、共通ポリシーの実装だけで全機能の共有構成にしません。
+- 品質要求は同じ順序の観点群で表示します。可用性・性能・運用保守・移行・セキュリティ・環境と、使用性・互換性・安全性を扱います。これは表示上の分類で、正式な非機能要求グレードの全下位項目・レベル表ではありません。環境の観点は現行の標準カタログにないため「観点未定義」と表示します。
+- 未検討・保留・対象外を区別し、品質要素が存在するだけで検討済みにしません。観点を選ぶと記録された理由・前提・残るリスク・再検討条件を読めます。親の判断は子へ継承しません。
+- 要素を選ぶと、改行を保った全属性・関係・実接続・既存の判断記録を表示します。本文を編集する場合は「DSL」を開きます。構築用ボタン列や関係カードはありません。
+- Verificationの結果はその検証の対象に対するDSL上の宣言です。要求全体の完了や、現在の要求・実装版との一致を自動認定しません。
+- 初期表示は読み取り可能な倍率です。「全体表示」で俯瞰、「名前で移動」で要素を探せます。1本指で移動、2本指のピンチやトラックパッドでズームできます。
+- YAMLの読み込み・自動保存・Undo/Redo・SVG保存・オフライン版、SyntaxとAIプロンプトを利用できます。座標や表示状態はDSLへ保存しません。
 
 ## DSLと例
 
@@ -99,14 +98,14 @@ npm run cli -- matrix syntax/examples/design-map.archmodel.yaml
 ```
 
 ```js
-import {parseModel, validateModel, nextQuestion, renderModelMap, traceWhy} from './dist/archmodel.js';
+import {parseModel, validateModel, nextQuestion, renderStructuredMap, traceWhy} from './dist/archmodel.js';
 const model = parseModel(yaml);
 console.log(validateModel(model), nextQuestion(model));
 console.log(traceWhy(model, 'auth-runtime'));
-const {svg, layout} = renderModelMap(model, {expanded: false});
+const {svg, layout} = renderStructuredMap(model);
 ```
 
-`projectModelMap(model)`で全体マップの射影、`renderModelMap(model)`でSVGを取得できます。旧`computeDesignMap` / `renderDesignMap`は互換用APIとして保持しています。座標はView側で決まり、DSLへ追加しません。従来の`renderView`は補助図生成APIとして利用可能です。
+`renderStructuredMap(model)`は現在の全体マップのSVGと配置情報を返します。`structuredScopes(model)`は各要素の対応するCapability集合を返します。従来の`projectModelMap` / `renderModelMap`、`computeDesignMap` / `renderDesignMap`も互換APIとして保持しています。
 CLIはmarkdown / yaml / json / backlog / directoriesにも対応。Jira候補やディレクトリ案はローカルの提案出力です。
 型定義は`src/index.ts`、スキーマは`schema/`にあります。npm公開はしていません。
 

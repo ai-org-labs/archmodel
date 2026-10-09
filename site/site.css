@@ -86,3 +86,18 @@ footer>div{min-width:0}#merge-result{max-width:min(420px,25vw)}
 @media(max-width:640px){#checks{font-size:0;padding:6px}#checks::before{content:'✓';font-size:13px}#issue-count{font-size:10px}footer #merge-result{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}footer>div{display:flex;align-items:center;flex-wrap:wrap}footer button{padding:4px}}
 
 .history-controls button{display:grid;place-items:center;width:32px;height:32px;padding:0}.history-controls button svg{display:block;pointer-events:none}
+
+/* The map carries structure; color is reserved for selection and judgments. */
+.playground-page #canvas{background:#f5f7fa;background-image:none}
+.playground-page header,.playground-page .playground-nav,.playground-page #map-context{background:#fff;color:#263448;border-color:#d8e0e9}
+.playground-page .brand-mark{background:#245f9d}
+.playground-page .primary{background:#245f9d;border-color:#245f9d}
+.playground-page .map-legend{background:#fffffff5;border-color:#d8e0e9}
+.playground-page .legend-neutral:before{background:#eef3f9;border-color:#d8e0e9}
+.playground-page .legend-accent:before{background:#e8f1ff;border-color:#245f9d}
+.playground-page #drawing [data-review-read],.playground-page #drawing [data-select]{cursor:pointer}
+.playground-page #drawing [data-review-read]:hover text,.playground-page #drawing [data-select]:hover text{text-decoration:underline}
+.playground-page #detail dl{margin-top:0}.playground-page #detail dt{text-transform:none;letter-spacing:0;font-size:12px;color:#56667a}
+.playground-page #detail dd{white-space:pre-wrap;overflow-wrap:anywhere;color:#263448}
+.playground-page .review-reading{margin-top:20px;padding-top:8px;border-top:1px solid #d8e0e9;font-size:13px;line-height:1.7}
+.playground-page .review-reading p{overflow-wrap:anywhere}

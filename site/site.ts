@@ -1,3 +1,4 @@
+import {entityDetail,reviewDetail} from './map-details.js';
 import {installMapGestures} from './map-gestures.js';
 import {installMapEditors} from './map-editors.js';
 import {installReviews} from './reviews.js';
@@ -5,19 +6,19 @@ import {examples,navigation,siteBase} from './content.js';
 import {guideMarkup,mountGuide} from './guide.js';
 import './playground.css';
 import {laneLabel} from '@archmodel/core';
-import {fieldLabel,relationLabels} from '@archmodel/core';
+import {relationLabels} from '@archmodel/core';
 import {DocumentHistory} from './history.js';
 import {installAuthoring} from './authoring.js';
 import './site.css';
 import sample from '../syntax/examples/design-map.archmodel.yaml?raw';
 import bottomUp from '../syntax/examples/bottom-up.archmodel.yaml?raw';
-import {deleteEntity,parseModel,validateModel,planNextQuestions,designCoverage,reviewRows,renderModelMap,toMarkdown,availableLinks,linkEntities,EMPTY_MODEL} from '@archmodel/core';
+import {deleteEntity,parseModel,validateModel,planNextQuestions,designCoverage,reviewRows,renderStructuredMap,toMarkdown,availableLinks,linkEntities,EMPTY_MODEL} from '@archmodel/core';
 import type {Model,Kind} from '@archmodel/core';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 document.body.innerHTML=`<header><div class="brand"><span class="brand-mark">A</span><strong>ArchModel</strong><span class="divider"></span><span class="workspace-name">Design map</span></div><nav><button id="new-model">新規作成</button><button id="add-element">＋ 要素</button><button id="load">開く</button><input type="file" id="file" accept=".yaml,.yml,.json" hidden><button id="save">YAML保存</button><button id="svg">SVG保存</button><button id="edit" class="primary" aria-expanded="false">〈 〉 DSLを編集</button></nav></header>
 <div class="map-toolbar"><div><h1 id="title">Customer Platform</h1><span id="summary" role="status"></span></div><div class="map-actions"><select id="lane-language" aria-label="レーンの表示言語"><option value="en">English</option><option value="ja">日本語</option></select><button id="scope-toggle">関連範囲</button><button id="checks" aria-label="設計の確認" title="設計の確認">設計の確認 <span id="issue-count">0</span></button><button id="help" aria-label="構文リファレンス">?</button></div></div>
-<div id="scope-panel" hidden><label>深さ <input id="scope-depth" type="number" min="0" max="20" value="3"></label><label>方向 <select id="scope-direction"><option value="forward">順方向</option><option value="reverse">逆方向</option><option value="both">双方向</option></select></label><label>関連種別 <select id="scope-types"><option value="design">設計・実装・検証</option><option value="all">全ての意味付き関連</option><option value="architecture">システム接続</option><option value="contract">Contract</option><option value="policy">Policy / Decision</option></select></label></div><main><div id="link-prompt" hidden role="status"><span></span><button id="list-map-links">一覧から選ぶ</button><button id="cancel-map-link">キャンセル</button></div><section id="canvas" tabindex="0" aria-label="設計マップ。1本指で移動、2本指でピンチズーム、要素を選択して詳細を確認"><div id="drawing"></div></section><div class="map-legend"><span class="legend-neutral">設計要素</span><span class="legend-accent">選択・関連</span></div><div class="zoom-controls"><button id="zoom-out" aria-label="縮小">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="拡大">＋</button><button id="fit">全体表示</button><button id="actual">100%</button></div><div id="empty-error" hidden></div></main>
+<div id="scope-panel" hidden><label>深さ <input id="scope-depth" type="number" min="0" max="20" value="3"></label><label>方向 <select id="scope-direction"><option value="forward">順方向</option><option value="reverse">逆方向</option><option value="both">双方向</option></select></label><label>関連種別 <select id="scope-types"><option value="design">設計・実装・検証</option><option value="all">全ての意味付き関連</option><option value="architecture">システム接続</option><option value="contract">Contract</option><option value="policy">Policy / Decision</option></select></label></div><main><div id="link-prompt" hidden role="status"><span></span><button id="list-map-links">一覧から選ぶ</button><button id="cancel-map-link">キャンセル</button></div><section id="canvas" tabindex="0" aria-label="設計マップ。1本指で移動、2本指でピンチズーム、要素を選択して詳細を確認"><div id="drawing"></div></section><div class="map-legend"><span class="legend-neutral">囲み：所属と要求</span><span class="legend-accent">選択：関連を強調</span></div><div class="zoom-controls"><button id="zoom-out" aria-label="縮小">−</button><output id="zoom">100%</output><button id="zoom-in" aria-label="拡大">＋</button><button id="fit">全体表示</button><button id="actual">100%</button></div><div id="empty-error" hidden></div></main>
 <footer><span>Product → Capability → Behavior → Scenario</span><span>要素を選択すると、品質・設計・実装まで辿れます</span><div><span id="merge-result" role="status"></span><button id="restore-work" hidden>前の作業に戻る</button><button id="merge-open">YAMLを追加</button><input id="merge-file" type="file" accept=".yaml,.yml" hidden><button id="example">設計サンプル</button><button id="bottom">既存システムから</button></div></footer>
 <aside id="editor-panel" class="panel editor-panel" hidden><div class="panel-head"><div><small>SOURCE OF TRUTH</small><h2>Design Model</h2><button id="reload-example" type="button">最新のExampleに戻す</button></div><button id="close-editor" aria-label="エディタを閉じる">×</button></div><p class="panel-note">YAMLの内容が、そのまま設計マップに展開されます。</p><label for="source" class="sr-only">ArchModel DSL</label><textarea id="source" spellcheck="false" wrap="off"></textarea><div class="panel-bottom"><span id="storage">変更は自動保存されます</span><button id="markdown">Markdown保存</button><button id="json">JSON保存</button></div></aside>
 <aside id="inspector" class="panel inspector" hidden><div class="panel-head"><div><small id="detail-kind">DESIGN ELEMENT</small><h2 id="detail-title">設計要素</h2></div><button id="close-inspector" aria-label="詳細を閉じる">×</button></div><div id="detail"></div></aside>
@@ -74,7 +75,7 @@ function save(name:string,text:string,type='text/plain'){const url=URL.createObj
 function applyScale(){const drawing=el('drawing');drawing.style.transform=`translate(${offsetX}px,${offsetY}px) scale(${scale})`;el('zoom').textContent=`${Math.round(scale*100)}%`;}
 function stopZoom(){cancelAnimationFrame(zoomFrame);zoomFrame=0;targetScale=scale;}
 function fit(){stopZoom();const canvas=el('canvas');scale=Math.max(.1,Math.min(1,(canvas.clientWidth-48)/size.width,(canvas.clientHeight-48)/size.height));targetScale=scale;offsetX=(canvas.clientWidth-size.width*scale)/2;offsetY=(canvas.clientHeight-size.height*scale)/2;autoFit=true;applyScale();}
-function readableFit(){stopZoom();const canvas=el('canvas');scale=canvas.clientWidth<640?.85:Math.max(.55,Math.min(1,(canvas.clientWidth-48)/size.width));targetScale=scale;offsetX=24;offsetY=24;applyScale();}
+function readableFit(){stopZoom();const canvas=el('canvas');scale=canvas.clientWidth<640?.85:Math.max(.8,Math.min(1,(canvas.clientWidth-48)/size.width));targetScale=scale;offsetX=24;offsetY=24;applyScale();}
 function revealNode(id:string){const node=el('drawing').querySelector<SVGGElement>(`[data-node="${CSS.escape(id)}"]`);if(!node)return;stopZoom();const box=node.getBBox();scale=1;targetScale=1;offsetX=24-box.x;offsetY=24-box.y;autoFit=false;applyScale();}
 function animateZoom(){const next=Math.abs(targetScale-scale)<.0001?targetScale:scale+(targetScale-scale)*.28;const ratio=next/scale;offsetX=zoomAnchor.x-(zoomAnchor.x-offsetX)*ratio;offsetY=zoomAnchor.y-(zoomAnchor.y-offsetY)*ratio;scale=next;applyScale();zoomFrame=scale===targetScale?0:requestAnimationFrame(animateZoom);}
 function zoomTo(value:number,x=el('canvas').clientWidth/2,y=el('canvas').clientHeight/2){autoFit=false;targetScale=Math.max(.1,Math.min(4,value));zoomAnchor={x,y};if(!zoomFrame)zoomFrame=requestAnimationFrame(animateZoom);}
@@ -86,9 +87,7 @@ function select(id:string,preserveFolding=false){
 function inspect(){
  const entity=model.entities.find(e=>e.id===selectedId);if(!entity){el('inspector').hidden=true;return;}
  el('detail-kind').textContent=entity.kind;el('detail-title').textContent=entity.name;
- const fields=Object.entries(entity.data);
- const edges=model.edges.filter(e=>e.from===entity.id||e.to===entity.id);
- el('detail').innerHTML=`<div class="creation-actions"><button class="primary" data-edit-form="${escape(entity.id)}">編集</button><button data-link-node="${escape(entity.id)}">つなぐ</button><button data-map-focus="${escape(entity.id)}">マップをこの対象に絞る</button><button data-map-expand="${escape(entity.id)}">属性をマップで展開</button><button data-map-reviews="${escape(entity.id)}">設計観点をマップで確認</button><button data-review-target="${escape(entity.id)}">観点レビュー</button>${['scenario','quality','policy','contract','behavior','component','realization'].includes(entity.kind)?`<button data-assign-verification="${escape(entity.id)}">検証を割り当てる</button>`:''}<button class="delete-entity" data-delete-entity="${escape(entity.id)}" title="この要素を削除。元に戻すで復元できます">削除</button></div><p class="detail-hint">内容の変更は「編集」、関連付けは「つなぐ」から相手を選びます。関連する要素はマップ内の追加ボタンから作成できます。</p><dl>${fields.map(([key,value])=>`<dt>${escape(fieldLabel(key,entity.kind))}</dt><dd>${escape(Array.isArray(value)?value.join(' / '):typeof value==='object'?JSON.stringify(value):value)}</dd>`).join('')}</dl><h3>つながっている項目</h3><div class="connections">${edges.map(e=>{const id=e.from===entity.id?e.to:e.from;return `<button data-select="${escape(id)}"><small>${e.from===entity.id?'→':'←'} ${escape(relationLabels[e.relation]??e.relation)}</small>${escape(model.entities.find(n=>n.id===id)?.name??id)}</button>`;}).join('')||'<p>まだつながっていません。</p>'}</div>`;
+ el('detail').innerHTML=entityDetail(model,entity.id);
 }
 
 function draw(refit=true){
@@ -101,7 +100,7 @@ function draw(refit=true){
  mapContext.innerHTML=`<label>対象 <select id="map-jump"><option value="">名前で移動</option>${model.entities.map(e=>`<option value="${escape(e.id)}">${escape(e.name)} / ${e.kind}</option>`).join('')}</select></label>${mapFocusId?'<button id="clear-map-focus">全体へ戻る</button>':''}`;
  el<HTMLSelectElement>('map-jump').onchange=()=>{const id=el<HTMLSelectElement>('map-jump').value;if(!id)return;if(!el('drawing').querySelector(`[data-node="${CSS.escape(id)}"]`)){mapFocusId='';mapPerspective='';draw(false);}select(id);revealNode(id);};
  const clear=el('clear-map-focus');if(clear)clear.onclick=()=>{mapFocusId='';mapPerspective='';autoFit=true;draw();};
- const result=renderModelMap(model,{focus:mapFocusId||undefined,perspective:mapPerspective||undefined,selectedId,expandedIds:[...expandedMapIds],reviewTargetIds:[...reviewMapTargets],documentExpanded});svg=result.svg;size=result.layout;el('drawing').innerHTML=svg;el<HTMLButtonElement>('svg').disabled=false;if(refit&&autoFit)readableFit();else applyScale();
+ const result=renderStructuredMap(model,{selectedId});svg=result.svg;size=result.layout;el('drawing').innerHTML=svg;el<HTMLButtonElement>('svg').disabled=false;if(refit&&autoFit)readableFit();else applyScale();
 
 }
 function update(){
@@ -111,7 +110,7 @@ function update(){
  el('summary').textContent=`${model.entities.filter(e=>e.kind==='capability').length} capabilities · ${model.entities.filter(e=>e.kind==='behavior').length} behaviors · ${model.entities.filter(e=>e.kind==='scenario').length} scenarios`;
  el('issue-count').textContent=String(diagnostics.length);el('checks').classList.toggle('has-errors',errors.length>0);
  el('question').textContent=errors.length?'まず構文・参照エラーを修正してください。':planNextQuestions(model).primary?.message??'今のフェーズで提示する質問はありません。未結論・保留と検証結果を設計観点で確認してください。';
- el('diagnostics').innerHTML=diagnostics.length?diagnostics.map(d=>`<div class="diagnostic ${d.severity}"><strong>${escape(d.code)}</strong><p>${escape(d.message)}</p><small>${escape(d.path)}</small>${d.entityId&&d.code==='UNCOVERED'?`<button data-assign-verification="${escape(d.entityId)}">検証を割り当てる</button>`:''}${d.code!=='UNCOVERED'?`<button data-fix-code="${escape(d.code)}" data-fix-entity="${escape(d.entityId??'')}" data-fix-field="${escape(d.field??'')}">${d.code==='MISSING_FIELD'||d.code==='INVALID_GHERKIN'||d.code==='PUBLIC_AUTH'?'入力する':'対応する'}</button>`:''}${d.entityId?`<button data-select="${escape(d.entityId)}">要素を確認</button>`:''}</div>`).join(''):'<p>不足・孤立・参照切れは検出されませんでした。</p>';
+ el('diagnostics').innerHTML=diagnostics.length?diagnostics.map(d=>`<div class="diagnostic ${d.severity}"><strong>${escape(d.code)}</strong><p>${escape(d.message)}</p><small>${escape(d.path)}</small></div>`).join(''):'<p>構造上の不足は検出されませんでした。観点の結論や検証完了を保証するものではありません。</p>';
  for(const id of ['json','markdown'])el<HTMLButtonElement>(id).disabled=!!errors.length;
  draw();if(selectedId)inspect();try{localStorage.setItem(storageKey,editor.value);}catch{el('storage').textContent='下書き保存に失敗しました。YAML保存をご利用ください。';}
 }
@@ -123,14 +122,14 @@ function travelHistory(redo=false){commitEditor();newSource(redo?documentHistory
 el('undo').onclick=()=>travelHistory();el('redo').onclick=()=>travelHistory(true);
 document.addEventListener('keydown',event=>{if(!(event.metaKey||event.ctrlKey)||event.altKey||document.querySelector('dialog[open]')||(event.target as Element).closest('input,textarea,select,[contenteditable="true"]'))return;const key=event.key.toLowerCase();if(key==='z'||key==='y'){event.preventDefault();travelHistory(key==='y'||event.shiftKey);}});
 el('edit').onclick=()=>el('editor-panel').hidden?openEditor():closeEditor();el('close-editor').onclick=closeEditor;
-el('close-inspector').onclick=()=>{el('inspector').hidden=true;draw(false);};
+el('close-inspector').onclick=()=>{el('inspector').hidden=true;selectedId='';draw(false);};
 el('checks').onclick=()=>{el('check-panel').hidden=!el('check-panel').hidden;el('inspector').hidden=true;};el('close-checks').onclick=()=>el('check-panel').hidden=true;
 el('reload-example').onclick=()=>{if(confirm('編集中の内容を最新のExampleに置き換えます。必要な内容はYAML保存してください。'))newSource(selectedExample?.source??sample);};
 el('example').onclick=()=>{if(editor.value===sample||confirm('現在のモデルを設計サンプルに置き換えますか？必要な変更はYAML保存してください。'))newSource(sample);};el('bottom').onclick=()=>{if(confirm('既存システムから始めるサンプルに切り替えますか？'))newSource(bottomUp);};
 el('zoom-in').onclick=()=>zoomTo((zoomFrame?targetScale:scale)*1.25);el('zoom-out').onclick=()=>zoomTo((zoomFrame?targetScale:scale)/1.25);el('fit').onclick=fit;el('actual').onclick=()=>zoomTo(1);
 window.addEventListener('resize',()=>{if(autoFit)readableFit();});
-document.addEventListener('click',e=>{if((e.target as Element).closest('[data-create-kind]'))return;const target=(e.target as Element).closest<HTMLElement>('[data-node],[data-select]');if(target){const id=target.dataset.node??target.dataset.select!;if(linkingFrom)completeMapLink(id);else select(id);}else if((e.target as Element).closest('#canvas')&&!(e.target as Element).closest('[data-map-edge],[data-map-review-target]')){selectedId='';el('inspector').hidden=true;draw(false);}});
-el('canvas').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const node=(e.target as Element).closest<HTMLElement>('[data-node]');if(node){e.preventDefault();if(linkingFrom)completeMapLink(node.dataset.node!);else select(node.dataset.node!);}}});
+document.addEventListener('click',e=>{if((e.target as Element).closest('[data-create-kind]'))return;const target=(e.target as Element).closest<HTMLElement>('[data-node],[data-select]');if(target){const id=target.dataset.node??target.dataset.select!;if(linkingFrom)completeMapLink(id);else select(id);}else if((e.target as Element).closest('#canvas')&&!(e.target as Element).closest('[data-review-read],[data-map-edge],[data-map-review-target]')){selectedId='';el('inspector').hidden=true;draw(false);}});
+el('canvas').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const node=(e.target as Element).closest<HTMLElement>('[data-node],[data-select]');if(node){e.preventDefault();const id=node.dataset.node??node.dataset.select!;if(linkingFrom)completeMapLink(id);else select(id);}}});
 installMapGestures(el('canvas'),{get:()=>({scale,x:offsetX,y:offsetY}),begin:stopZoom,set:value=>{autoFit=false;scale=value.scale;targetScale=scale;offsetX=value.x;offsetY=value.y;applyScale();}});
 el('canvas').addEventListener('wheel',e=>{e.preventDefault();const unit=e.deltaMode===1?16:e.deltaMode===2?el('canvas').clientHeight:1;if(e.ctrlKey||e.metaKey){const rect=el('canvas').getBoundingClientRect();zoomTo((zoomFrame?targetScale:scale)*Math.exp(-e.deltaY*unit*.008),e.clientX-rect.left,e.clientY-rect.top);}else{stopZoom();autoFit=false;offsetX-=e.deltaX*unit;offsetY-=e.deltaY*unit;applyScale();}},{passive:false});
 
@@ -143,11 +142,13 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySele
 const reviewUI=installReviews({source:()=>editor.value,model:()=>parseModel(editor.value),replace:newSource});
 const mapEditors=installMapEditors({source:()=>editor.value,model:()=>model,replace:newSource,link:beginLink});
 function mapAction(event:Event){
- const button=(event.target as Element).closest<HTMLElement>('[data-map-reveal],[data-map-add],[data-map-perspective],[data-map-focus],[data-map-expand],[data-map-reviews],[data-map-edit],[data-map-review-target],[data-map-edge],[data-map-document-toggle],[data-map-document-edit],#expand-scope-reviews,#edit-map-document,#add-map-connection');if(!button)return;
+ const button=(event.target as Element).closest<HTMLElement>('[data-shared-row],[data-review-read],[data-map-reveal],[data-map-add],[data-map-perspective],[data-map-focus],[data-map-expand],[data-map-reviews],[data-map-edit],[data-map-review-target],[data-map-edge],[data-map-document-toggle],[data-map-document-edit],#expand-scope-reviews,#edit-map-document,#add-map-connection');if(!button)return;
  if(event instanceof KeyboardEvent&&!['Enter',' '].includes(event.key))return;
  event.preventDefault();event.stopPropagation();
  const d=button.dataset;
- if(d.mapReveal){const id=d.mapReveal;if(!el('drawing').querySelector(`[data-node="${CSS.escape(id)}"]`)){mapFocusId='';mapPerspective='';draw(false);}select(id);revealNode(id);}
+ if(d.sharedRow){const group=el('drawing').querySelector<SVGGElement>(`[data-shared-row-target="${CSS.escape(d.sharedRow)}"]`);if(group){const box=group.getBBox();stopZoom();offsetY=32-box.y*scale;autoFit=false;applyScale();}}
+ else if(d.reviewRead){selectedId=d.reviewRead;draw(false);const content=reviewDetail(model,d.reviewRead,d.reviewGroup!);el('detail-kind').textContent=model.entities.find(e=>e.id===d.reviewRead)?.name??d.reviewRead;el('detail-title').textContent=content.title;el('detail').innerHTML=content.html;el('inspector').hidden=false;el('check-panel').hidden=true;}
+ else if(d.mapReveal){const id=d.mapReveal;if(!el('drawing').querySelector(`[data-node="${CSS.escape(id)}"]`)){mapFocusId='';mapPerspective='';draw(false);}select(id);revealNode(id);}
  else if(d.mapAdd){const field=d.mapAdd==='realization'?'implemented_by':d.mapAdd==='verification'?'verified_by':'has';authoring.open(d.mapAdd as Kind,{link:{from:d.mapParent!,field}});}
  else if(d.mapPerspective){mapFocusId=d.mapTarget!;mapPerspective=d.mapPerspective;autoFit=true;draw();}
  else if(d.mapFocus){mapFocusId=d.mapFocus;mapPerspective='';autoFit=true;el('inspector').hidden=true;draw();}
@@ -213,7 +214,7 @@ document.addEventListener('click',event=>{
  select(id);if(['UNKNOWN_REFERENCE','RELATION_TYPE'].includes(code))openEditor();
 });
 document.addEventListener('click',event=>{const button=(event.target as Element).closest<HTMLElement>('[data-delete-entity]');if(!button)return;try{newSource(deleteEntity(editor.value,button.dataset.deleteEntity!));el('merge-result').textContent='要素と関連を削除しました。子要素は保持しています。元に戻すで復元できます。';}catch(error){alert(String(error));}});
-el('new-model').onclick=authoring.start;el('add-element').onclick=authoring.add;
+el('new-model').onclick=()=>{if(confirm('新しいDSLを作成しますか？必要な内容はYAML保存してください。')){newSource(EMPTY_MODEL);openEditor();}};el('add-element').hidden=true;el('edit-map-document').hidden=true;el('add-map-connection').hidden=true;
 
 
 
